@@ -77,6 +77,8 @@ const defaults = {
     'google_app_password',
     'serper_api_key',
     'brave_search_key',
+    'tavily_api_key',
+    'perplexity_api_key',
     'notion_api_key',
     'slack_bot_token',
   ],
