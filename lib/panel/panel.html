@@ -3,75 +3,892 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BetterClaw Control Panel</title>
+<title>BetterClaw</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #1a1a2e;
-    color: #e0e0e0;
-    min-height: 100vh;
+  :root {
+    --bg: #111118;
+    --surface: #1a1a24;
+    --surface2: #222230;
+    --border: #2a2a3a;
+    --border-subtle: #1e1e2e;
+    --text: #e0e0e8;
+    --text-dim: #8888aa;
+    --text-muted: #555566;
+    --accent: #e94560;
+    --accent-hover: #c73e54;
+    --accent-bg: #e9456015;
+    --green: #52b788;
+    --green-bg: #1b4332;
+    --green-dim: #2d6b4a;
+    --purple: #b388ff;
+    --purple-bg: #2d1b4e;
+    --blue: #6699cc;
+    --blue-bg: #0f3460;
+    --sidebar-w: 56px;
+    --topbar-h: 48px;
+    --bottombar-h: 32px;
+    --mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --radius: 8px;
+    --radius-sm: 4px;
   }
-  header {
-    background: #16213e;
-    border-bottom: 1px solid #0f3460;
-    padding: 12px 24px;
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ═══════ APP GRID ═══════ */
+  .app {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    grid-template-rows: var(--topbar-h) 1fr var(--bottombar-h);
+    height: 100vh;
+  }
+
+  /* ═══════ SIDEBAR ═══════ */
+  .sidebar {
+    grid-row: 1 / -1;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10;
+  }
+  .sidebar-logo {
+    height: var(--topbar-h);
     display: flex;
     align-items: center;
-    gap: 24px;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: 1px;
+    cursor: default;
   }
-  header h1 { font-size: 18px; color: #e94560; font-weight: 700; }
-  nav { display: flex; gap: 4px; }
-  nav button {
-    background: transparent;
-    border: none;
-    color: #8888aa;
-    padding: 8px 16px;
+  .sidebar-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 8px;
+    width: 100%;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
     cursor: pointer;
-    border-radius: 6px 6px 0 0;
-    font-size: 14px;
+    border-left: 3px solid transparent;
+    transition: all .15s;
+    position: relative;
+  }
+  .nav-item:hover { background: var(--surface2); }
+  .nav-item.active {
+    border-left-color: var(--accent);
+    background: var(--accent-bg);
+  }
+  .nav-item svg { width: 20px; height: 20px; fill: var(--text-dim); transition: fill .15s; }
+  .nav-item.active svg { fill: var(--accent); }
+  .nav-item:hover svg { fill: var(--text); }
+  .nav-item .tooltip {
+    position: absolute;
+    left: calc(var(--sidebar-w) + 4px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s;
+    z-index: 20;
+  }
+  .nav-item:hover .tooltip { opacity: 1; }
+
+  /* ═══════ TOP BAR ═══════ */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+  }
+  .topbar-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .topbar-badges {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+    background: var(--surface2);
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+  .status-dot.on { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-dot.off { background: var(--accent); }
+
+  /* ═══════ CONTENT ═══════ */
+  .content {
+    overflow: hidden;
+    position: relative;
+  }
+  .view {
+    display: none;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  .view.active { display: flex; flex-direction: column; }
+
+  /* ═══════ BOTTOM BAR ═══════ */
+  .bottombar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .bottombar-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+
+  /* ═══════ SHARED: BUTTONS ═══════ */
+  .btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 7px 16px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--sans);
+    transition: background .15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--accent-hover); }
+  .btn.secondary { background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim); }
+  .btn.secondary:hover { background: var(--border); color: var(--text); }
+  .btn.danger { background: #8b0000; }
+  .btn.danger:hover { background: #a00; }
+  .btn.sm { padding: 4px 10px; font-size: 12px; }
+
+  /* ═══════ SHARED: FORMS ═══════ */
+  input, select, textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-family: var(--sans);
+    outline: none;
+    transition: border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  input[type="text"], input[type="number"], input[type="password"] { flex: 1; }
+  select { min-width: 100px; }
+
+  /* ═══════ SHARED: BADGES ═══════ */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge.ok { background: var(--green-bg); color: var(--green); }
+  .badge.no { background: #3d0000; color: var(--accent); }
+
+  /* ═══════ SHARED: TOGGLE ═══════ */
+  .toggle { position: relative; width: 40px; height: 22px; cursor: pointer; flex-shrink: 0; }
+  .toggle input { display: none; }
+  .toggle .slider {
+    position: absolute; inset: 0; background: var(--surface2); border-radius: 11px;
+    border: 1px solid var(--border); transition: .2s;
+  }
+  .toggle .slider::before {
+    content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px;
+    background: var(--text-dim); border-radius: 50%; transition: .2s;
+  }
+  .toggle input:checked + .slider { background: var(--green-bg); border-color: var(--green-dim); }
+  .toggle input:checked + .slider::before { transform: translateX(18px); background: var(--green); }
+
+  /* ═══════ SHARED: TOAST ═══════ */
+  .toast {
+    position: fixed; bottom: 48px; right: 24px;
+    background: var(--green-bg); color: var(--green); border: 1px solid var(--green-dim);
+    padding: 10px 20px; border-radius: var(--radius);
+    font-size: 13px; font-weight: 600;
+    opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+
+  /* ═══════ SHARED: SPINNER ═══════ */
+  .spinner::after {
+    content: ''; display: inline-block; width: 12px; height: 12px;
+    border: 2px solid var(--text-muted); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .6s linear infinite; margin-left: 8px; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ═══════ SHARED: SCROLLBAR ═══════ */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* ═══════════════════════════════════════
+     VIEW: SESSIONS (master-detail split)
+     ═══════════════════════════════════════ */
+  .sessions-split {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    flex: 1;
+    overflow: hidden;
+  }
+  .session-list-pane {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .session-search {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .session-search input {
+    width: 100%;
+    padding: 7px 10px 7px 28px;
+    background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%23555566' viewBox='0 0 24 24'%3E%3Cpath d='M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E") 8px center no-repeat;
+  }
+  .session-filters {
+    display: flex;
+    gap: 4px;
+  }
+  .filter-pill {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
     transition: all .15s;
   }
-  nav button:hover { color: #e0e0e0; background: #1a1a2e; }
-  nav button.active { color: #e94560; background: #1a1a2e; border-bottom: 2px solid #e94560; }
-  main { max-width: 960px; margin: 0 auto; padding: 24px; }
-  .tab { display: none; }
-  .tab.active { display: block; }
-
-  /* Cards */
-  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-  .card {
-    background: #16213e;
-    border: 1px solid #0f3460;
-    border-radius: 8px;
-    padding: 16px;
-  }
-  .card h3 { font-size: 12px; text-transform: uppercase; color: #8888aa; margin-bottom: 8px; letter-spacing: .5px; }
-  .card .value { font-size: 28px; font-weight: 700; color: #e94560; }
-  .card .sub { font-size: 12px; color: #8888aa; margin-top: 4px; }
-
-  /* Journal */
-  .journal-box {
-    background: #16213e;
-    border: 1px solid #0f3460;
-    border-radius: 8px;
-    padding: 16px;
-    max-height: 400px;
+  .filter-pill:hover { border-color: var(--text-dim); color: var(--text); }
+  .filter-pill.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+  .session-items {
+    flex: 1;
     overflow-y: auto;
-    white-space: pre-wrap;
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: 13px;
-    line-height: 1.6;
+  }
+  .session-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-subtle);
+    cursor: pointer;
+    transition: background .1s;
+  }
+  .session-item:hover { background: var(--surface2); }
+  .session-item.active { background: var(--accent-bg); border-left: 3px solid var(--accent); }
+  .session-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 3px;
+  }
+  .session-item-id {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .session-item-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+  .session-item-preview {
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+  .session-item-stats {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 8px;
+  }
+  .session-item-cost {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--accent);
+    font-weight: 600;
+    margin-left: auto;
+  }
+  .session-item-type {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 8px;
+    text-transform: uppercase;
+  }
+  .type-chat { background: var(--blue-bg); color: var(--blue); }
+  .type-heartbeat { background: var(--green-bg); color: var(--green); }
+  .type-cron { background: var(--purple-bg); color: var(--purple); }
+
+  /* Session detail (trace) */
+  .session-detail-pane {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .session-detail-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  .session-detail-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .session-detail-id {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .session-detail-stats {
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    gap: 12px;
+  }
+  .session-detail-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+  }
+  .session-trace {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
   }
 
-  /* Forms */
+  /* Trace message blocks */
+  .trace-msg { margin: 4px 0; border-radius: var(--radius-sm); }
+  .trace-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    min-height: 32px;
+  }
+  .trace-role {
+    font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: .5px;
+    padding: 2px 8px; border-radius: var(--radius-sm); flex-shrink: 0;
+  }
+  .trace-role.user { background: var(--blue-bg); color: var(--blue); }
+  .trace-role.assistant { background: var(--purple-bg); color: var(--purple); }
+  .trace-role.tool { background: var(--green-bg); color: var(--green); }
+  .trace-role.system { background: var(--surface2); color: var(--text-muted); }
+  .trace-chars { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+  .trace-preview {
+    font-size: 12px; color: var(--text-dim); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0;
+  }
+  .trace-expand {
+    font-size: 11px; color: var(--accent); cursor: pointer; flex-shrink: 0;
+    background: none; border: 1px solid var(--accent-bg); border-radius: var(--radius-sm);
+    padding: 2px 8px; transition: all .15s; font-family: var(--sans);
+  }
+  .trace-expand:hover { background: var(--accent-bg); border-color: var(--accent); }
+  .trace-body {
+    display: none; padding: 10px 12px; margin: 0 12px 8px; background: var(--bg);
+    border-radius: var(--radius-sm); font-family: var(--mono); font-size: 12px;
+    white-space: pre-wrap; word-break: break-word; max-height: 400px; overflow-y: auto;
+    line-height: 1.6; border: 1px solid var(--border-subtle);
+  }
+  .trace-body.show { display: block; }
+
+  /* Tool call cards */
+  .trace-tool {
+    margin: 4px 0; border-left: 3px solid var(--accent);
+    background: var(--surface); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  }
+  .trace-tool .trace-header { padding: 8px 12px; cursor: pointer; }
+  .trace-tool .trace-header:hover { background: var(--surface2); }
+  .trace-tool-name {
+    color: var(--accent); font-weight: 600; font-size: 13px; font-family: var(--mono);
+  }
+  .trace-tool-args {
+    font-size: 11px; color: var(--text-dim); margin-left: 8px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;
+  }
+  .trace-tool-id { font-size: 10px; color: var(--text-muted); flex-shrink: 0; font-family: var(--mono); }
+
+  /* Tool result cards */
+  .trace-result {
+    margin: 4px 0 4px 16px; border-left: 3px solid var(--green);
+    background: #0f2820; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  }
+  .trace-result .trace-header { padding: 6px 12px; cursor: pointer; }
+  .trace-result .trace-header:hover { background: #1a3025; }
+  .trace-result-label { color: var(--green); font-size: 11px; font-weight: 600; }
+
+  /* Audit metadata block */
+  .trace-audit {
+    margin: 8px 0;
+    padding: 10px 14px;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .trace-audit-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .trace-audit-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 2px;
+  }
+  .trace-audit-label { color: var(--text-muted); min-width: 80px; }
+  .trace-audit-value { color: var(--text); }
+
+  /* ═══════════════════════════════════════
+     VIEW: CHAT
+     ═══════════════════════════════════════ */
+  .chat-view { display: none; flex-direction: column; }
+  .chat-view.active { display: flex; }
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .msg {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .msg.user {
+    align-self: flex-end;
+    background: var(--blue-bg);
+    border-bottom-right-radius: 4px;
+  }
+  .msg.assistant {
+    align-self: flex-start;
+    background: var(--purple-bg);
+    border-bottom-left-radius: 4px;
+  }
+  .msg code {
+    background: var(--bg);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .msg pre {
+    background: var(--bg);
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    margin: 6px 0;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .chat-tool-activity {
+    font-size: 12px;
+    color: var(--text-dim);
+    padding: 4px 8px;
+    margin: 2px 0;
+    border-left: 2px solid var(--border);
+    font-family: var(--mono);
+  }
+  .chat-tool-activity .tool-name { color: var(--accent); }
+  .chat-tool-activity .tool-result { color: var(--green); }
+  .chat-bottom {
+    border-top: 1px solid var(--border);
+    padding: 10px 16px;
+  }
+  .chat-context-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: border-color .15s;
+  }
+  .pill:hover { border-color: var(--text-dim); }
+  .pill .x { color: var(--accent); font-weight: bold; }
+  .pill.add { border-style: dashed; color: var(--text-dim); }
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .chat-input-row textarea {
+    flex: 1;
+    resize: none;
+    height: 42px;
+    padding: 10px;
+    font-size: 14px;
+  }
+  .chat-topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  /* ═══════════════════════════════════════
+     VIEW: ACTIVITY
+     ═══════════════════════════════════════ */
+  .activity-cards {
+    display: flex;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    flex: 1;
+    min-width: 120px;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .stat-card:hover { border-color: var(--text-dim); }
+  .stat-card-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .stat-card-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .stat-card-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .activity-body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    overflow: hidden;
+    margin-top: 12px;
+  }
+  .activity-feed {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .activity-feed-title {
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .activity-feed-items {
+    flex: 1;
+    overflow-y: auto;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.8;
+    padding: 8px 16px;
+  }
+  .feed-entry { padding: 2px 0; border-bottom: 1px solid var(--border-subtle); }
+  .feed-time { color: var(--text-muted); margin-right: 10px; }
+  .cost-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .cost-panel-title {
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .cost-panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+  }
+  .budget-bar-bg {
+    height: 18px;
+    background: var(--surface2);
+    border-radius: 9px;
+    overflow: hidden;
+    margin-bottom: 6px;
+    border: 1px solid var(--border);
+  }
+  .budget-bar-fill {
+    height: 100%;
+    border-radius: 9px;
+    background: var(--accent);
+    transition: width .3s;
+  }
+  .budget-bar-fill.ok { background: var(--green); }
+  .budget-bar-fill.warn { background: #cc8800; }
+  .budget-bar-fill.over { background: var(--accent); }
+  .budget-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+  .spend-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 80px;
+    margin-bottom: 16px;
+  }
+  .spend-bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .spend-bar {
+    width: 100%;
+    background: var(--accent);
+    border-radius: 3px 3px 0 0;
+    min-height: 2px;
+    transition: height .3s;
+  }
+  .spend-bar-label {
+    font-size: 9px;
+    color: var(--text-muted);
+  }
+  .cost-breakdown { margin-top: 8px; }
+  .cost-breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .cost-breakdown-role { color: var(--text-dim); }
+  .cost-breakdown-val { color: var(--accent); font-weight: 600; font-family: var(--mono); }
+  /* Last Task Card */
+  .last-task-card {
+    margin: 0 16px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    flex-shrink: 0;
+  }
+  .last-task-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .last-task-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .last-task-id {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .last-task-id:hover { text-decoration: underline; }
+  .last-task-preview {
+    font-size: 13px;
+    color: var(--text);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .last-task-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .last-task-cost {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .journal-section {
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .journal-toggle {
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-dim);
+    transition: background .1s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .journal-toggle:hover { background: var(--surface2); }
+  .journal-toggle-arrow { transition: transform .2s; font-size: 10px; }
+  .journal-toggle-arrow.open { transform: rotate(90deg); }
+  .journal-body {
+    display: none;
+    padding: 0 16px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    max-height: 300px;
+    overflow-y: auto;
+    color: var(--text-dim);
+  }
+  .journal-body.show { display: block; }
+
+  /* ═══════════════════════════════════════
+     VIEW: SETTINGS
+     ═══════════════════════════════════════ */
+  .settings-nav {
+    display: flex;
+    gap: 4px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    background: var(--surface);
+  }
+  .settings-pill {
+    padding: 5px 14px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    transition: all .15s;
+  }
+  .settings-pill:hover { border-color: var(--text-dim); color: var(--text); }
+  .settings-pill.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+  .settings-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  .settings-section { display: none; }
+  .settings-section.active { display: block; }
   .form-section { margin-bottom: 24px; }
   .form-section h3 {
-    font-size: 14px;
-    color: #e94560;
+    font-size: 13px;
+    color: var(--accent);
     margin-bottom: 12px;
     padding-bottom: 6px;
-    border-bottom: 1px solid #0f3460;
+    border-bottom: 1px solid var(--border);
   }
   .form-row {
     display: flex;
@@ -82,260 +899,61 @@
   .form-row label {
     min-width: 140px;
     font-size: 13px;
-    color: #8888aa;
+    color: var(--text-dim);
+    flex-shrink: 0;
   }
-  input, select, textarea {
-    background: #0f3460;
-    border: 1px solid #1a1a4e;
-    color: #e0e0e0;
-    padding: 6px 10px;
-    border-radius: 4px;
-    font-size: 13px;
-    font-family: inherit;
-  }
-  input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: #e94560;
-  }
-  input[type="text"], input[type="number"], input[type="password"] { flex: 1; }
-  select { min-width: 120px; }
-
-  /* Buttons */
-  .btn {
-    background: #e94560;
-    color: #fff;
-    border: none;
-    padding: 8px 20px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    transition: background .15s;
-  }
-  .btn:hover { background: #c73e54; }
-  .btn.secondary { background: #0f3460; }
-  .btn.secondary:hover { background: #16213e; }
-  .btn.danger { background: #8b0000; }
-  .btn.danger:hover { background: #a00; }
-  .btn.small { padding: 4px 12px; font-size: 12px; }
-
-  /* Badges */
-  .badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 600;
-  }
-  .badge.ok { background: #1b4332; color: #52b788; }
-  .badge.no { background: #3d0000; color: #e94560; }
-
-  /* Credentials table */
-  .cred-table { width: 100%; border-collapse: collapse; }
-  .cred-table th {
-    text-align: left;
-    font-size: 12px;
-    text-transform: uppercase;
-    color: #8888aa;
-    padding: 8px 12px;
-    border-bottom: 1px solid #0f3460;
-  }
-  .cred-table td {
-    padding: 10px 12px;
-    border-bottom: 1px solid #0f346033;
-    font-size: 13px;
-  }
-  .cred-table .cred-input {
-    display: none;
-    gap: 8px;
-    align-items: center;
-  }
-  .cred-table .cred-input.show { display: flex; }
-
-  /* Toggle */
-  .toggle {
-    position: relative;
-    width: 44px;
-    height: 24px;
-    cursor: pointer;
-  }
-  .toggle input { display: none; }
-  .toggle .slider {
-    position: absolute;
-    inset: 0;
-    background: #0f3460;
-    border-radius: 12px;
-    transition: .2s;
-  }
-  .toggle .slider::before {
-    content: '';
-    position: absolute;
-    width: 18px;
-    height: 18px;
-    left: 3px;
-    top: 3px;
-    background: #8888aa;
-    border-radius: 50%;
-    transition: .2s;
-  }
-  .toggle input:checked + .slider { background: #1b4332; }
-  .toggle input:checked + .slider::before { transform: translateX(20px); background: #52b788; }
-
-  /* Results */
   .result-box {
-    background: #0f3460;
-    border-radius: 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
     padding: 12px;
     margin-top: 12px;
-    font-family: 'SF Mono', monospace;
+    font-family: var(--mono);
     font-size: 12px;
     white-space: pre-wrap;
     display: none;
   }
   .result-box.show { display: block; }
 
-  /* Chat */
-  .chat-container {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 120px);
+  /* Credentials table */
+  .cred-table { width: 100%; border-collapse: collapse; }
+  .cred-table th {
+    text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
+    color: var(--text-dim); padding: 8px 12px; border-bottom: 1px solid var(--border);
   }
-  .chat-topbar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  .cred-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-subtle); font-size: 13px; }
+  .cred-input { display: none; gap: 8px; align-items: center; margin-top: 8px; }
+  .cred-input.show { display: flex; }
+
+  /* Settings lists (crons, skills, tools) */
+  .settings-list-item {
     padding: 8px 0;
-    border-bottom: 1px solid #0f3460;
-    margin-bottom: 8px;
-    flex-wrap: wrap;
-  }
-  .chat-topbar select { font-size: 12px; }
-  .context-pills {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    flex: 1;
-  }
-  .pill {
-    background: #0f3460;
-    border: 1px solid #1a1a4e;
-    border-radius: 12px;
-    padding: 3px 10px;
-    font-size: 11px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .pill .x { color: #e94560; font-weight: bold; }
-  .pill.add { border-style: dashed; color: #8888aa; }
-  .messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 12px 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .msg {
-    max-width: 80%;
-    padding: 10px 14px;
-    border-radius: 12px;
-    font-size: 14px;
-    line-height: 1.5;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-  .msg.user {
-    align-self: flex-end;
-    background: #0f3460;
-    border-bottom-right-radius: 4px;
-  }
-  .msg.assistant {
-    align-self: flex-start;
-    background: #2d1b4e;
-    border-bottom-left-radius: 4px;
-  }
-  .msg code {
-    background: #1a1a2e;
-    padding: 1px 4px;
-    border-radius: 3px;
-    font-family: 'SF Mono', monospace;
+    border-bottom: 1px solid var(--border-subtle);
     font-size: 13px;
   }
-  .msg pre {
-    background: #1a1a2e;
-    padding: 8px;
-    border-radius: 4px;
-    margin: 6px 0;
-    overflow-x: auto;
-    font-family: 'SF Mono', monospace;
-    font-size: 12px;
-  }
-  .chat-input {
-    display: flex;
-    gap: 8px;
-    padding: 12px 0;
-    border-top: 1px solid #0f3460;
-  }
-  .chat-input textarea {
-    flex: 1;
-    resize: none;
-    height: 44px;
-    padding: 10px;
-    font-size: 14px;
-  }
-  .typing { color: #8888aa; font-style: italic; font-size: 13px; padding: 4px 0; }
-  .tool-activity {
-    font-size: 12px;
-    color: #8888aa;
-    padding: 4px 8px;
-    margin: 4px 0;
-    border-left: 2px solid #0f3460;
-    font-family: 'SF Mono', monospace;
-  }
-  .tool-activity .tool-name { color: #e94560; }
-  .tool-activity .tool-result { color: #52b788; }
+  .settings-list-item:last-child { border-bottom: none; }
+  .settings-list-empty { color: var(--text-dim); font-size: 13px; font-style: italic; }
 
-  /* toast */
-  .toast {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    background: #1b4332;
-    color: #52b788;
-    padding: 10px 20px;
-    border-radius: 8px;
+  /* Gateway status card in settings */
+  .gw-status-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
     font-size: 13px;
-    font-weight: 600;
-    opacity: 0;
-    transition: opacity .3s;
-    pointer-events: none;
-    z-index: 100;
+    line-height: 1.8;
   }
-  .toast.show { opacity: 1; }
 
-  /* Loading */
-  .spinner::after { content: ''; display: inline-block; width: 12px; height: 12px; border: 2px solid #8888aa; border-top-color: #e94560; border-radius: 50%; animation: spin .6s linear infinite; margin-left: 8px; vertical-align: middle; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* Fullwidth for chat */
-  .tab-chat main, .tab-chat .chat-container { max-width: 100%; }
-
-  /* Modal */
+  /* ═══════ MODAL ═══════ */
   .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.6);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 200;
+    position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    display: none; align-items: center; justify-content: center; z-index: 200;
   }
   .modal-overlay.show { display: flex; }
   .modal {
-    background: #16213e;
-    border: 1px solid #0f3460;
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 12px;
     width: 520px;
     max-height: 70vh;
@@ -343,188 +961,293 @@
     flex-direction: column;
   }
   .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 18px;
-    border-bottom: 1px solid #0f3460;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
   }
-  .modal-header h3 { font-size: 14px; color: #e94560; }
-  .modal-header .close { background: none; border: none; color: #8888aa; cursor: pointer; font-size: 18px; }
+  .modal-header h3 { font-size: 14px; color: var(--accent); }
+  .modal-header .close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 18px; }
   .modal-path {
-    padding: 8px 18px;
-    font-family: 'SF Mono', monospace;
-    font-size: 12px;
-    color: #8888aa;
-    background: #1a1a2e;
-    border-bottom: 1px solid #0f3460;
-    word-break: break-all;
+    padding: 8px 18px; font-family: var(--mono); font-size: 12px;
+    color: var(--text-dim); background: var(--bg);
+    border-bottom: 1px solid var(--border); word-break: break-all;
   }
-  .modal-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 0;
-  }
+  .modal-body { flex: 1; overflow-y: auto; padding: 8px 0; }
   .folder-item {
-    display: flex;
-    align-items: center;
-    padding: 8px 18px;
-    cursor: pointer;
-    font-size: 13px;
-    gap: 8px;
-    transition: background .1s;
+    display: flex; align-items: center; padding: 8px 18px;
+    cursor: pointer; font-size: 13px; gap: 8px; transition: background .1s;
   }
-  .folder-item:hover { background: #1a1a2e; }
-  .folder-item .icon { color: #e94560; width: 16px; }
-  .folder-item.parent { color: #8888aa; }
+  .folder-item:hover { background: var(--surface2); }
+  .folder-item .icon { color: var(--accent); width: 16px; }
+  .folder-item.parent { color: var(--text-dim); }
   .modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 12px 18px;
-    border-top: 1px solid #0f3460;
+    display: flex; justify-content: flex-end; gap: 8px;
+    padding: 12px 18px; border-top: 1px solid var(--border);
   }
 </style>
 </head>
 <body>
-<header>
-  <h1>BetterClaw</h1>
-  <nav>
-    <button data-tab="dashboard" class="active">Dashboard</button>
-    <button data-tab="chat">Chat</button>
-    <button data-tab="config">Config</button>
-    <button data-tab="credentials">Credentials</button>
-    <button data-tab="channels">Gateway</button>
-  </nav>
-</header>
+<div class="app">
 
-<main>
-
-<!-- DASHBOARD -->
-<div id="tab-dashboard" class="tab active">
-  <div class="card-grid">
-    <div class="card"><h3>Gateway</h3><div class="value" id="stat-gateway">--</div><div class="sub" id="stat-gateway-sub"></div></div>
-    <div class="card"><h3>Heartbeat</h3><div class="value" id="stat-hb">--</div><div class="sub" id="stat-hb-sub"></div></div>
-    <div class="card"><h3>Sessions</h3><div class="value" id="stat-sessions">--</div></div>
-    <div class="card"><h3>Credentials</h3><div class="value" id="stat-creds">--</div><div class="sub" id="stat-creds-sub"></div></div>
-    <div class="card"><h3>Crons</h3><div class="value" id="stat-crons">--</div><div class="sub" id="stat-crons-sub"></div></div>
-    <div class="card"><h3>Skills</h3><div class="value" id="stat-skills">--</div></div>
-    <div class="card"><h3>Custom Tools</h3><div class="value" id="stat-tools">--</div></div>
-  </div>
-  <h3 style="color:#e94560;margin-bottom:12px;">Today's Journal</h3>
-  <div class="journal-box" id="journal-content">Loading...</div>
-</div>
-
-<!-- CHAT -->
-<div id="tab-chat" class="tab">
-  <div class="chat-container">
-    <div class="chat-topbar">
-      <button class="btn small" id="chat-new">New Session</button>
-      <select id="chat-session-picker"><option value="">Select session...</option></select>
-      <div class="context-pills" id="chat-context-pills"></div>
-    </div>
-    <div class="messages" id="chat-messages"></div>
-    <div class="chat-input">
-      <textarea id="chat-input" placeholder="Send a message..." rows="1"></textarea>
-      <button class="btn" id="chat-send">Send</button>
-    </div>
-  </div>
-</div>
-
-<!-- CONFIG -->
-<div id="tab-config" class="tab">
-  <form id="config-form">
-    <div class="form-section">
-      <h3>Paths</h3>
-      <div class="form-row"><label>Vault Path</label><input type="text" name="vault" id="cfg-vault"><button type="button" class="btn small secondary" id="cfg-vault-browse">Browse</button></div>
-      <div class="form-row"><label>Daily Notes Dir</label><input type="text" name="dailyNotesDir" id="cfg-dailyNotesDir"></div>
-      <div class="form-row"><label>Inbox Dir</label><input type="text" name="inboxDir" id="cfg-inboxDir"></div>
-    </div>
-    <div class="form-section">
-      <h3>Models</h3>
-      <div id="cfg-models"></div>
-    </div>
-    <div class="form-section">
-      <h3>Compaction</h3>
-      <div class="form-row"><label>Keep Recent</label><input type="number" name="compaction.keepRecentMessages" id="cfg-keepRecent"></div>
-      <div class="form-row"><label>Max Before Compact</label><input type="number" name="compaction.maxMessagesBeforeCompact" id="cfg-maxCompact"></div>
-    </div>
-    <div class="form-section">
-      <h3>Budget</h3>
-      <div class="form-row"><label>Daily Limit (USD)</label><input type="number" step="0.1" name="budget.dailyLimit" id="cfg-dailyLimit"></div>
-      <div class="form-row"><label>Warn At (USD)</label><input type="number" step="0.1" name="budget.warnAt" id="cfg-warnAt"></div>
-    </div>
-    <button type="submit" class="btn">Save Config</button>
-  </form>
-</div>
-
-<!-- CREDENTIALS -->
-<div id="tab-credentials" class="tab">
-  <table class="cred-table">
-    <thead><tr><th>Key</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody id="cred-tbody"></tbody>
-  </table>
-</div>
-
-<!-- CHANNELS -->
-<div id="tab-channels" class="tab">
-  <!-- Gateway Status -->
-  <div class="card" style="margin-bottom:16px;">
-    <h3>Gateway</h3>
-    <div id="gw-status" style="margin-top:12px;font-size:13px;line-height:1.8;"></div>
-  </div>
-
-  <!-- Heartbeat Config -->
-  <div class="card" style="margin-bottom:16px;">
-    <h3>Heartbeat</h3>
-    <div class="form-row" style="margin-top:12px;">
-      <label>Interval (min)</label>
-      <input type="number" id="hb-interval" style="width:80px;" min="1">
-    </div>
-    <div class="form-row">
-      <label>Sources</label>
-      <div style="display:flex;gap:12px;">
-        <label><input type="checkbox" id="hb-src-inbox" value="inbox"> Inbox</label>
-        <label><input type="checkbox" id="hb-src-tasks" value="tasks"> Tasks</label>
-        <label><input type="checkbox" id="hb-src-github" value="github"> GitHub</label>
+  <!-- ═══════ SIDEBAR ═══════ -->
+  <div class="sidebar">
+    <div class="sidebar-logo">BC</div>
+    <div class="sidebar-nav">
+      <div class="nav-item active" data-view="sessions">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+        <span class="tooltip">Sessions</span>
+      </div>
+      <div class="nav-item" data-view="chat">
+        <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+        <span class="tooltip">Chat</span>
+      </div>
+      <div class="nav-item" data-view="activity">
+        <svg viewBox="0 0 24 24"><path d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93 0 3.73-2.56 6.86-6.02 7.75-.24.06-.49.1-.73.15L12 22c5.52-.17 9.83-4.75 9.83-10.28 0-4.93-3.5-9.04-8.15-9.98L13 2.05zM11 2.06C6.14 2.56 2.17 6.53 2.02 11.4L2 12c0 5.52 4.47 10 9.99 10l1.26-.02c-.25-.05-.49-.09-.74-.15C9.06 20.86 6.5 17.73 6.5 14c0-4.08 3.06-7.44 7-7.93V4.06L11 2.06zM12 6c-3.87 0-7 3.13-7 7s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm-1 12v-2h2v2h-2zm0-4V8h2v6h-2z"/></svg>
+        <span class="tooltip">Activity</span>
+      </div>
+      <div class="nav-item" data-view="settings">
+        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>
+        <span class="tooltip">Settings</span>
       </div>
     </div>
-    <div style="display:flex;gap:8px;margin-top:12px;">
-      <button class="btn" id="hb-save">Save Heartbeat Settings</button>
-      <button class="btn secondary" id="hb-run">Run Now</button>
+  </div>
+
+  <!-- ═══════ TOP BAR ═══════ -->
+  <div class="topbar">
+    <span class="topbar-title" id="view-title">Sessions</span>
+    <div class="topbar-badges">
+      <div class="status-badge" id="badge-cost">
+        <span id="badge-cost-text">$0.00</span>
+      </div>
+      <div class="status-badge" id="badge-gateway">
+        <div class="status-dot" id="gateway-dot"></div>
+        <span id="badge-gateway-text">Gateway</span>
+      </div>
     </div>
-    <div class="result-box" id="hb-result"></div>
   </div>
 
-  <!-- Cron Jobs -->
-  <div class="card" style="margin-bottom:16px;">
-    <h3>Cron Jobs</h3>
-    <div id="crons-list" style="margin-top:12px;font-size:13px;"></div>
+  <!-- ═══════ CONTENT ═══════ -->
+  <div class="content">
+
+    <!-- ——— SESSIONS VIEW ——— -->
+    <div class="view active" id="view-sessions">
+      <div class="sessions-split">
+        <div class="session-list-pane">
+          <div class="session-search">
+            <input type="text" id="session-search-input" placeholder="Search sessions...">
+            <div class="session-filters">
+              <span class="filter-pill active" data-filter="all">All</span>
+              <span class="filter-pill" data-filter="chat">Chat</span>
+              <span class="filter-pill" data-filter="heartbeat">Heartbeat</span>
+              <span class="filter-pill" data-filter="cron">Cron</span>
+            </div>
+          </div>
+          <div class="session-items" id="session-items"></div>
+        </div>
+        <div class="session-detail-pane" id="session-detail-pane">
+          <div class="session-detail-empty">Select a session to view its trace</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ——— CHAT VIEW ——— -->
+    <div class="view" id="view-chat">
+      <div class="chat-topbar">
+        <button class="btn sm secondary" id="chat-new">+ New</button>
+        <select id="chat-session-picker"><option value="">Select session...</option></select>
+        <span id="chat-cost" style="margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:600;"></span>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-bottom">
+        <div class="chat-context-pills" id="chat-context-pills"></div>
+        <div class="chat-input-row">
+          <textarea id="chat-input" placeholder="Send a message..." rows="1"></textarea>
+          <button class="btn" id="chat-send">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ——— ACTIVITY VIEW ——— -->
+    <div class="view" id="view-activity">
+      <div class="activity-cards">
+        <div class="stat-card" data-goto="settings">
+          <div class="stat-card-label">Gateway</div>
+          <div class="stat-card-value" id="act-gateway">--</div>
+          <div class="stat-card-sub" id="act-gateway-sub"></div>
+        </div>
+        <div class="stat-card" data-goto="sessions">
+          <div class="stat-card-label">Sessions</div>
+          <div class="stat-card-value" id="act-sessions">--</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Today's Spend</div>
+          <div class="stat-card-value" id="act-today-cost">--</div>
+          <div class="stat-card-sub" id="act-today-calls"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Heartbeats</div>
+          <div class="stat-card-value" id="act-hb">--</div>
+          <div class="stat-card-sub" id="act-hb-sub"></div>
+        </div>
+      </div>
+
+      <!-- Last Task Card -->
+      <div class="last-task-card" id="last-task-card">
+        <div class="last-task-label">Last Task</div>
+        <div class="last-task-content" id="last-task-content">
+          <span style="color:var(--text-muted);">Loading...</span>
+        </div>
+      </div>
+
+      <div class="activity-body">
+        <div class="activity-feed">
+          <div class="activity-feed-title">Live Feed</div>
+          <div class="activity-feed-items" id="activity-feed"></div>
+        </div>
+        <div class="cost-panel">
+          <div class="cost-panel-title">Cost Analytics</div>
+          <div class="cost-panel-content" id="cost-panel-content">
+            <div id="budget-section"></div>
+            <div style="font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:8px;margin-top:4px;">7-Day Spend</div>
+            <div class="spend-chart" id="spend-chart"></div>
+            <div style="font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;">Today's Breakdown</div>
+            <div class="cost-breakdown" id="cost-breakdown"></div>
+            <div style="font-size:12px;font-weight:600;color:var(--text-dim);margin:16px 0 6px;">30-Day Total</div>
+            <div id="cost-30day" style="font-size:20px;font-weight:700;color:var(--accent);font-family:var(--mono);"></div>
+          </div>
+        </div>
+      </div>
+      <div class="journal-section">
+        <div class="journal-toggle" id="journal-toggle">
+          <span class="journal-toggle-arrow" id="journal-arrow">&#9654;</span>
+          Today's Journal
+        </div>
+        <div class="journal-body" id="journal-body"></div>
+      </div>
+    </div>
+
+    <!-- ——— SETTINGS VIEW ——— -->
+    <div class="view" id="view-settings">
+      <div class="settings-nav">
+        <span class="settings-pill active" data-section="general">General</span>
+        <span class="settings-pill" data-section="models">Models</span>
+        <span class="settings-pill" data-section="credentials">Credentials</span>
+        <span class="settings-pill" data-section="gateway">Gateway</span>
+        <span class="settings-pill" data-section="crons">Crons</span>
+        <span class="settings-pill" data-section="skills">Skills</span>
+        <span class="settings-pill" data-section="tools">Tools</span>
+      </div>
+      <div class="settings-body">
+
+        <!-- General -->
+        <div class="settings-section active" id="settings-general">
+          <form id="config-form">
+            <div class="form-section">
+              <h3>Paths</h3>
+              <div class="form-row"><label>Vault Path</label><input type="text" name="vault" id="cfg-vault"><button type="button" class="btn sm secondary" id="cfg-vault-browse">Browse</button></div>
+              <div class="form-row"><label>Daily Notes Dir</label><input type="text" name="dailyNotesDir" id="cfg-dailyNotesDir"></div>
+              <div class="form-row"><label>Inbox Dir</label><input type="text" name="inboxDir" id="cfg-inboxDir"></div>
+            </div>
+            <div class="form-section">
+              <h3>Compaction</h3>
+              <div class="form-row"><label>Keep Recent</label><input type="number" name="compaction.keepRecentMessages" id="cfg-keepRecent"></div>
+              <div class="form-row"><label>Max Before Compact</label><input type="number" name="compaction.maxMessagesBeforeCompact" id="cfg-maxCompact"></div>
+            </div>
+            <div class="form-section">
+              <h3>Budget</h3>
+              <div class="form-row"><label>Daily Limit (USD)</label><input type="number" step="0.1" name="budget.dailyLimit" id="cfg-dailyLimit"></div>
+              <div class="form-row"><label>Warn At (USD)</label><input type="number" step="0.1" name="budget.warnAt" id="cfg-warnAt"></div>
+            </div>
+            <button type="submit" class="btn">Save Config</button>
+          </form>
+        </div>
+
+        <!-- Models -->
+        <div class="settings-section" id="settings-models">
+          <div class="form-section">
+            <h3>Model Configuration</h3>
+            <div id="cfg-models"></div>
+            <button type="button" class="btn" id="models-save" style="margin-top:12px;">Save Models</button>
+          </div>
+        </div>
+
+        <!-- Credentials -->
+        <div class="settings-section" id="settings-credentials">
+          <table class="cred-table">
+            <thead><tr><th>Key</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="cred-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Gateway -->
+        <div class="settings-section" id="settings-gateway">
+          <div class="gw-status-card" id="gw-status"></div>
+          <div class="form-section">
+            <h3>Heartbeat</h3>
+            <div class="form-row">
+              <label>Interval (min)</label>
+              <input type="number" id="hb-interval" style="width:80px;flex:unset;" min="1">
+            </div>
+            <div class="form-row">
+              <label>Sources</label>
+              <div style="display:flex;gap:12px;">
+                <label style="min-width:unset;display:flex;align-items:center;gap:4px;"><input type="checkbox" id="hb-src-inbox" value="inbox"> Inbox</label>
+                <label style="min-width:unset;display:flex;align-items:center;gap:4px;"><input type="checkbox" id="hb-src-tasks" value="tasks"> Tasks</label>
+                <label style="min-width:unset;display:flex;align-items:center;gap:4px;"><input type="checkbox" id="hb-src-github" value="github"> GitHub</label>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <button class="btn" id="hb-save">Save Heartbeat</button>
+              <button class="btn secondary" id="hb-run">Run Now</button>
+            </div>
+            <div class="result-box" id="hb-result"></div>
+          </div>
+        </div>
+
+        <!-- Crons -->
+        <div class="settings-section" id="settings-crons">
+          <div class="form-section">
+            <h3>Cron Jobs</h3>
+            <div id="crons-list"></div>
+          </div>
+        </div>
+
+        <!-- Skills -->
+        <div class="settings-section" id="settings-skills">
+          <div class="form-section">
+            <h3>Skills</h3>
+            <div id="skills-list"></div>
+          </div>
+        </div>
+
+        <!-- Tools -->
+        <div class="settings-section" id="settings-tools">
+          <div class="form-section">
+            <h3>Custom Tools</h3>
+            <div id="tools-list"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 
-  <!-- Skills -->
-  <div class="card" style="margin-bottom:16px;">
-    <h3>Skills</h3>
-    <div id="skills-list" style="margin-top:12px;font-size:13px;"></div>
+  <!-- ═══════ BOTTOM BAR ═══════ -->
+  <div class="bottombar">
+    <div class="bottombar-dot" id="bottombar-dot"></div>
+    <span id="bottombar-text">Starting up...</span>
   </div>
 
-  <!-- Custom Tools -->
-  <div class="card" style="margin-bottom:16px;">
-    <h3>Custom Tools</h3>
-    <div id="tools-list" style="margin-top:12px;font-size:13px;"></div>
-  </div>
 </div>
 
-</main>
-
-<!-- Folder Browser Modal -->
+<!-- ═══════ FOLDER BROWSER MODAL ═══════ -->
 <div class="modal-overlay" id="browse-modal">
   <div class="modal">
     <div class="modal-header">
       <h3>Browse for Folder</h3>
       <button class="close" id="browse-close">&times;</button>
     </div>
-    <div id="browse-bookmarks" style="display:flex;gap:6px;padding:8px 18px;flex-wrap:wrap;border-bottom:1px solid #0f3460;"></div>
+    <div id="browse-bookmarks" style="display:flex;gap:6px;padding:8px 18px;flex-wrap:wrap;border-bottom:1px solid var(--border);"></div>
     <div class="modal-path" id="browse-path"></div>
     <div class="modal-body" id="browse-list"></div>
     <div class="modal-footer">
@@ -540,20 +1263,7 @@
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 
-// --- Tabs ---
-$$('nav button').forEach(btn => {
-  btn.addEventListener('click', () => {
-    $$('nav button').forEach(b => b.classList.remove('active'));
-    $$('.tab').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
-    $(`#tab-${btn.dataset.tab}`).classList.add('active');
-    if (btn.dataset.tab === 'dashboard') loadDashboard();
-    if (btn.dataset.tab === 'config') loadConfig();
-    if (btn.dataset.tab === 'credentials') loadCredentials();
-    if (btn.dataset.tab === 'channels') loadChannels();
-    if (btn.dataset.tab === 'chat') initChat();
-  });
-});
+// ═══════ HELPERS ═══════
 
 function toast(msg) {
   const t = $('#toast');
@@ -572,282 +1282,380 @@ async function api(path, opts = {}) {
   return res.json();
 }
 
-// --- Dashboard ---
-async function loadDashboard() {
-  const data = await api('status');
-  $('#stat-sessions').textContent = data.sessions;
-  const configured = data.credentials.filter(c => c.configured).length;
-  $('#stat-creds').textContent = `${configured}/${data.credentials.length}`;
-  $('#stat-creds-sub').textContent = data.credentials.filter(c => !c.configured).map(c => c.name).join(', ') || 'All set';
-
-  // Gateway status
-  if (data.gateway?.running) {
-    $('#stat-gateway').textContent = 'Running';
-    $('#stat-gateway').style.color = '#52b788';
-    const upMin = data.gateway.startedAt ? Math.floor((Date.now() - new Date(data.gateway.startedAt).getTime()) / 60000) : 0;
-    $('#stat-gateway-sub').textContent = upMin > 60 ? `Up ${Math.floor(upMin/60)}h ${upMin%60}m` : `Up ${upMin}m`;
-  } else {
-    $('#stat-gateway').textContent = 'Stopped';
-    $('#stat-gateway').style.color = '#e94560';
-    $('#stat-gateway-sub').textContent = '';
-  }
-
-  // Heartbeat
-  const hbCount = data.gateway?.heartbeatCount || 0;
-  $('#stat-hb').textContent = hbCount;
-  $('#stat-hb').style.color = '#e94560';
-  const lastHb = data.gateway?.lastHeartbeat || data.heartbeat?.lastRun;
-  if (lastHb) {
-    const ago = Math.floor((Date.now() - new Date(lastHb).getTime()) / 60000);
-    $('#stat-hb-sub').textContent = `Last: ${ago}m ago · every ${data.heartbeat?.intervalMinutes || 15}m`;
-  } else {
-    $('#stat-hb-sub').textContent = `Every ${data.heartbeat?.intervalMinutes || 15}m · not run yet`;
-  }
-
-  // Crons
-  const cronData = data.crons || {};
-  $('#stat-crons').textContent = cronData.enabled || 0;
-  $('#stat-crons-sub').textContent = cronData.total ? `${cronData.total} total` : '';
-
-  // Skills & Tools
-  $('#stat-skills').textContent = data.skills || 0;
-  $('#stat-tools').textContent = data.customTools || 0;
-
-  $('#journal-content').textContent = data.journal || 'No journal entry for today.';
+function escapeHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// --- Config ---
-const MODEL_ROLES = ['router', 'quick', 'default', 'deep'];
-const PROVIDERS = ['anthropic', 'ollama', 'openai', 'openrouter', 'together', 'groq', 'generic'];
-
-async function loadConfig() {
-  const data = await api('config');
-  const c = data.current;
-  $('#cfg-vault').value = c.vault || '';
-  $('#cfg-dailyNotesDir').value = c.dailyNotesDir || '';
-  $('#cfg-inboxDir').value = c.inboxDir || '';
-  $('#cfg-keepRecent').value = c.compaction?.keepRecentMessages ?? '';
-  $('#cfg-maxCompact').value = c.compaction?.maxMessagesBeforeCompact ?? '';
-  $('#cfg-dailyLimit').value = c.budget?.dailyLimit ?? '';
-  $('#cfg-warnAt').value = c.budget?.warnAt ?? '';
-
-  // Models
-  const container = $('#cfg-models');
-  container.innerHTML = '';
-  for (const role of MODEL_ROLES) {
-    const m = c.models?.[role] || {};
-    const row = document.createElement('div');
-    row.className = 'form-row';
-    row.innerHTML = `
-      <label>${role}</label>
-      <select data-role="${role}" data-field="provider">
-        ${PROVIDERS.map(p => `<option value="${p}" ${m.provider === p ? 'selected' : ''}>${p}</option>`).join('')}
-      </select>
-      <input type="text" data-role="${role}" data-field="model" value="${m.model || ''}" placeholder="model name">
-    `;
-    container.appendChild(row);
-  }
+function formatCharCount(n) {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
 }
 
-$('#config-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const body = {};
-  // Paths
-  const vault = $('#cfg-vault').value.trim();
-  if (vault) body.vault = vault;
-  const dailyNotesDir = $('#cfg-dailyNotesDir').value.trim();
-  if (dailyNotesDir) body.dailyNotesDir = dailyNotesDir;
-  const inboxDir = $('#cfg-inboxDir').value.trim();
-  if (inboxDir) body.inboxDir = inboxDir;
-  // Models
-  body.models = {};
-  for (const role of MODEL_ROLES) {
-    const provider = $(`select[data-role="${role}"][data-field="provider"]`).value;
-    const model = $(`input[data-role="${role}"][data-field="model"]`).value.trim();
-    body.models[role] = { provider, model };
-  }
-  // Compaction
-  body.compaction = {
-    keepRecentMessages: parseInt($('#cfg-keepRecent').value) || 10,
-    maxMessagesBeforeCompact: parseInt($('#cfg-maxCompact').value) || 30,
-  };
-  // Budget
-  body.budget = {
-    dailyLimit: parseFloat($('#cfg-dailyLimit').value) || 2.0,
-    warnAt: parseFloat($('#cfg-warnAt').value) || 1.5,
-  };
-  await api('config', { method: 'POST', body });
-  toast('Config saved');
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const ms = Date.now() - new Date(dateStr).getTime();
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const days = Math.floor(hr / 24);
+  return `${days}d ago`;
+}
+
+function renderMarkdownLite(text) {
+  return text
+    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^- (.+)/gm, '&bull; $1')
+    .replace(/\n/g, '<br>');
+}
+
+// ═══════ NAVIGATION ═══════
+
+const VIEW_TITLES = { sessions: 'Sessions', chat: 'Chat', activity: 'Activity', settings: 'Settings' };
+let currentView = 'sessions';
+let polls = {};
+
+function switchView(view) {
+  // Stop all polls
+  Object.values(polls).forEach(id => clearInterval(id));
+  polls = {};
+
+  currentView = view;
+  $$('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === view));
+  $$('.view').forEach(v => v.classList.toggle('active', v.id === `view-${view}`));
+  $('#view-title').textContent = VIEW_TITLES[view] || view;
+
+  if (view === 'sessions') { loadSessionsList(); polls.sessions = setInterval(loadSessionsList, 10000); }
+  if (view === 'chat') initChat();
+  if (view === 'activity') { loadActivity(); polls.feed = setInterval(loadGatewayFeed, 2000); }
+  if (view === 'settings') loadSettingsSection();
+}
+
+$$('.nav-item').forEach(item => {
+  item.addEventListener('click', () => switchView(item.dataset.view));
 });
 
-// --- Credentials ---
-async function loadCredentials() {
-  const creds = await api('creds');
-  const tbody = $('#cred-tbody');
-  tbody.innerHTML = '';
-  for (const c of creds) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="font-family:monospace;">${c.name}</td>
-      <td><span class="badge ${c.configured ? 'ok' : 'no'}">${c.configured ? 'Configured' : 'Not Set'}</span></td>
-      <td>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <button class="btn small secondary cred-set-btn" data-name="${c.name}">Set</button>
-          ${c.configured ? `<button class="btn small danger cred-rm-btn" data-name="${c.name}">Remove</button>` : ''}
-        </div>
-        <div class="cred-input" id="cred-input-${c.name}">
-          <input type="password" placeholder="Enter value..." id="cred-val-${c.name}">
-          <button class="btn small cred-save-btn" data-name="${c.name}">Save</button>
-        </div>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  }
-
-  // Set button toggles input
-  $$('.cred-set-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const input = $(`#cred-input-${btn.dataset.name}`);
-      input.classList.toggle('show');
-      if (input.classList.contains('show')) {
-        input.querySelector('input').focus();
-      }
-    });
-  });
-
-  // Save credential
-  $$('.cred-save-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const name = btn.dataset.name;
-      const value = $(`#cred-val-${name}`).value;
-      if (!value) return;
-      await api(`creds/${name}`, { method: 'POST', body: { value } });
-      toast(`Saved: ${name}`);
-      loadCredentials();
-    });
-  });
-
-  // Remove credential
-  $$('.cred-rm-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      await api(`creds/${btn.dataset.name}`, { method: 'DELETE' });
-      toast(`Removed: ${btn.dataset.name}`);
-      loadCredentials();
-    });
-  });
-}
-
-// --- Channels ---
-async function loadChannels() {
-  const [gw, cfg, skills, tools, crons] = await Promise.all([
-    api('gateway'),
-    api('config'),
-    api('skills'),
-    api('custom-tools'),
-    api('crons'),
-  ]);
-
-  // Gateway status
-  const gwDiv = $('#gw-status');
-  if (gw.running) {
-    const upSec = gw.uptime || 0;
-    const upStr = upSec > 3600 ? `${Math.floor(upSec/3600)}h ${Math.floor((upSec%3600)/60)}m` : `${Math.floor(upSec/60)}m`;
-    const cronInfo = gw.crons ? ` · Crons: ${gw.crons.enabled}/${gw.crons.total} active` : '';
-    gwDiv.innerHTML = `
-      <span class="badge ok">Running</span> PID ${gw.pid} · Up ${upStr}<br>
-      Heartbeat: every ${gw.heartbeat.intervalMinutes}m · ${gw.heartbeat.count} runs${gw.heartbeat.lastRun ? ` · last ${new Date(gw.heartbeat.lastRun).toLocaleTimeString()}` : ''}<br>
-      Telegram: ${gw.telegram ? '<span class="badge ok">Connected</span>' : '<span class="badge no">Off</span>'}${cronInfo}
-    `;
-  } else {
-    gwDiv.innerHTML = '<span class="badge no">Not Running</span> — start with <code>claw gateway</code>';
-  }
-
-  // Heartbeat config
-  const hb = cfg.current?.heartbeat || {};
-  $('#hb-interval').value = hb.intervalMinutes || 15;
-  const sources = hb.sources || ['inbox', 'tasks', 'github'];
-  $('#hb-src-inbox').checked = sources.includes('inbox');
-  $('#hb-src-tasks').checked = sources.includes('tasks');
-  $('#hb-src-github').checked = sources.includes('github');
-
-  // Crons
-  const cronsDiv = $('#crons-list');
-  if (crons.length === 0) {
-    cronsDiv.innerHTML = '<span style="color:#8888aa;">No cron jobs. Raya can create them with create_cron.</span>';
-  } else {
-    cronsDiv.innerHTML = crons.map(c => {
-      const status = c.enabled ? '<span class="badge ok">On</span>' : '<span class="badge no">Off</span>';
-      const last = c.lastRun ? `last: ${new Date(c.lastRun).toLocaleString()}` : 'never run';
-      return `<div style="padding:6px 0;border-bottom:1px solid #0f346033;">
-        ${status} <strong>${c.name}</strong> <span style="color:#8888aa;font-family:monospace;font-size:12px;">${c.schedule}</span><br>
-        <span style="color:#8888aa;font-size:12px;">${c.prompt.slice(0, 100)}${c.prompt.length > 100 ? '...' : ''}</span><br>
-        <span style="color:#8888aa;font-size:11px;">${last} · ${c.runCount || 0} runs · ID: ${c.id}</span>
-      </div>`;
-    }).join('');
-  }
-
-  // Skills
-  const skillsDiv = $('#skills-list');
-  if (skills.length === 0) {
-    skillsDiv.innerHTML = '<span style="color:#8888aa;">No skills yet. Raya can create them.</span>';
-  } else {
-    skillsDiv.innerHTML = skills.map(s =>
-      `<div style="padding:4px 0;"><strong>${s.name}</strong> <span style="color:#8888aa;">— ${s.description || 'no description'}</span></div>`
-    ).join('');
-  }
-
-  // Custom tools
-  const toolsDiv = $('#tools-list');
-  if (tools.length === 0) {
-    toolsDiv.innerHTML = '<span style="color:#8888aa;">No custom tools yet. Raya can create them.</span>';
-  } else {
-    toolsDiv.innerHTML = tools.map(t =>
-      `<div style="padding:4px 0;"><strong>${t.name}</strong> <span style="color:#8888aa;">— ${t.description || ''}</span></div>`
-    ).join('');
-  }
-}
-
-$('#hb-save').addEventListener('click', async () => {
-  const intervalMinutes = parseInt($('#hb-interval').value) || 15;
-  const sources = [];
-  if ($('#hb-src-inbox').checked) sources.push('inbox');
-  if ($('#hb-src-tasks').checked) sources.push('tasks');
-  if ($('#hb-src-github').checked) sources.push('github');
-
-  await api('config', { method: 'POST', body: { heartbeat: { intervalMinutes, sources } } });
-  toast('Heartbeat settings saved (gateway hot-reloaded)');
-  loadChannels();
+// Stat card click navigation
+$$('.stat-card[data-goto]').forEach(card => {
+  card.addEventListener('click', () => switchView(card.dataset.goto));
 });
 
-$('#hb-run').addEventListener('click', async () => {
-  const box = $('#hb-result');
-  box.textContent = 'Running heartbeat...';
-  box.classList.add('show');
+// ═══════ TOP BAR STATUS ═══════
+
+async function updateTopBar() {
   try {
-    const result = await api('heartbeat/run', { method: 'POST' });
-    box.textContent = JSON.stringify(result, null, 2);
-  } catch (err) {
-    box.textContent = `Error: ${err.message}`;
+    const [status, costs] = await Promise.all([api('status'), api('costs')]);
+
+    // Gateway dot
+    const dot = $('#gateway-dot');
+    const gwText = $('#badge-gateway-text');
+    if (status.gateway?.running) {
+      dot.classList.add('on');
+      dot.classList.remove('off');
+      gwText.textContent = 'Gateway';
+    } else {
+      dot.classList.remove('on');
+      dot.classList.add('off');
+      gwText.textContent = 'Offline';
+    }
+
+    // Today's cost
+    const today = costs.length > 0 ? costs[0] : null;
+    const todayCost = today ? today.totalCost : 0;
+    $('#badge-cost-text').textContent = `$${todayCost.toFixed(2)}`;
+  } catch {}
+}
+
+// ═══════ BOTTOM BAR ═══════
+
+let lastTickerText = '';
+async function updateTicker() {
+  try {
+    const log = await api('gateway/log');
+    if (log.length > 0) {
+      const last = log[log.length - 1];
+      const t = new Date(last.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      const text = `${t}  ${last.text}`;
+      if (text !== lastTickerText) {
+        lastTickerText = text;
+        $('#bottombar-text').textContent = text;
+        $('#bottombar-dot').style.background = 'var(--green)';
+      }
+    } else {
+      $('#bottombar-text').textContent = 'No gateway activity';
+      $('#bottombar-dot').style.background = 'var(--text-muted)';
+    }
+  } catch {
+    $('#bottombar-text').textContent = 'Gateway not connected';
+    $('#bottombar-dot').style.background = 'var(--text-muted)';
   }
+}
+
+// ═══════ SESSIONS VIEW ═══════
+
+let allSessions = [];
+let activeSessionFilter = 'all';
+let activeSessionId = null;
+
+function guessSessionType(s) {
+  const preview = (s.lastMessage || '').toLowerCase();
+  const id = (s.id || '').toLowerCase();
+  if (id.startsWith('hb-') || id.startsWith('heartbeat') || preview.includes('heartbeat')) return 'heartbeat';
+  if (id.startsWith('cron-') || preview.includes('cron')) return 'cron';
+  return 'chat';
+}
+
+async function loadSessionsList() {
+  try {
+    const sessions = await api('sessions');
+    allSessions = sessions;
+    renderSessionList();
+  } catch {}
+}
+
+function renderSessionList() {
+  const query = ($('#session-search-input').value || '').toLowerCase();
+  const container = $('#session-items');
+
+  let filtered = allSessions;
+
+  // Filter by type
+  if (activeSessionFilter !== 'all') {
+    filtered = filtered.filter(s => guessSessionType(s) === activeSessionFilter);
+  }
+
+  // Filter by search
+  if (query) {
+    filtered = filtered.filter(s =>
+      (s.id || '').toLowerCase().includes(query) ||
+      (s.lastMessage || '').toLowerCase().includes(query)
+    );
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;">No sessions found</div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.slice(0, 50).map(s => {
+    const type = guessSessionType(s);
+    const stats = s.stats || {};
+    const cost = s.cost || {};
+    const tokStr = stats.estTokens ? `~${formatCharCount(stats.estTokens)} tok` : '';
+    const toolStr = stats.toolCalls ? `${stats.toolCalls} tools` : '';
+    const costStr = cost.total ? `$${cost.total.toFixed(4)}` : '';
+    const statParts = [toolStr, tokStr].filter(Boolean).join(' \u00b7 ');
+    const active = s.id === activeSessionId ? ' active' : '';
+    return `<div class="session-item${active}" data-id="${s.id}">
+      <div class="session-item-header">
+        <span class="session-item-type type-${type}">${type}</span>
+        <span class="session-item-id">${s.id.slice(0, 10)}</span>
+        ${costStr ? `<span class="session-item-cost">${costStr}</span>` : ''}
+        <span class="session-item-time">${timeAgo(s.created)}</span>
+      </div>
+      <div class="session-item-preview">${escapeHtml((s.lastMessage || '').slice(0, 80))}</div>
+      <div class="session-item-stats">
+        <span>${s.messageCount || 0} msgs</span>
+        ${statParts ? `<span>${statParts}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  container.querySelectorAll('.session-item').forEach(item => {
+    item.addEventListener('click', () => {
+      activeSessionId = item.dataset.id;
+      // Highlight active
+      container.querySelectorAll('.session-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      loadSessionDetail(item.dataset.id);
+    });
+  });
+}
+
+// Filter pills
+$$('.filter-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    $$('.filter-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    activeSessionFilter = pill.dataset.filter;
+    renderSessionList();
+  });
 });
 
-// --- Chat ---
+// Search input
+$('#session-search-input').addEventListener('input', () => renderSessionList());
+
+// Session detail trace rendering
+
+let _traceUid = 0;
+function traceId() { return `trace-${++_traceUid}`; }
+
+function renderTextBlock(role, text, uid) {
+  const len = text.length;
+  const preview = text.replace(/\n/g, ' ').slice(0, 120);
+  const truncated = len > 200;
+  return `<div class="trace-msg">
+    <div class="trace-header">
+      <span class="trace-role ${role}">${role.toUpperCase()}</span>
+      <span class="trace-chars">${formatCharCount(len)} chars</span>
+      <span class="trace-preview">${escapeHtml(preview)}${truncated ? '...' : ''}</span>
+      ${truncated ? `<button class="trace-expand" onclick="document.getElementById('${uid}').classList.toggle('show');this.textContent=this.textContent==='\u25B8'?'\u25BE':'\u25B8'">\u25B8</button>` : ''}
+    </div>
+    ${truncated ? `<div class="trace-body" id="${uid}">${escapeHtml(text)}</div>` : ''}
+  </div>`;
+}
+
+function renderToolUse(block, uid) {
+  const argsStr = JSON.stringify(block.input || {}, null, 2);
+  const argsPreview = JSON.stringify(block.input || {}).slice(0, 100);
+  return `<div class="trace-tool">
+    <div class="trace-header" onclick="document.getElementById('${uid}').classList.toggle('show')">
+      <span class="trace-tool-name">${escapeHtml(block.name)}</span>
+      <span class="trace-tool-args">${escapeHtml(argsPreview)}</span>
+      <span class="trace-tool-id">${block.id ? block.id.slice(-6) : ''}</span>
+      <button class="trace-expand">\u25B8</button>
+    </div>
+    <div class="trace-body" id="${uid}">${escapeHtml(argsStr)}</div>
+  </div>`;
+}
+
+function renderToolResult(content, uid) {
+  const text = typeof content === 'string' ? content : JSON.stringify(content || '', null, 2);
+  const len = text.length;
+  const preview = text.replace(/\n/g, ' ').slice(0, 100);
+  return `<div class="trace-result">
+    <div class="trace-header" onclick="document.getElementById('${uid}').classList.toggle('show')">
+      <span class="trace-result-label">result</span>
+      <span class="trace-chars">${formatCharCount(len)} chars</span>
+      <span class="trace-preview">${escapeHtml(preview)}${len > 100 ? '...' : ''}</span>
+      <button class="trace-expand">\u25B8</button>
+    </div>
+    <div class="trace-body" id="${uid}">${escapeHtml(text)}</div>
+  </div>`;
+}
+
+let allExpanded = false;
+
+async function loadSessionDetail(id) {
+  const pane = $('#session-detail-pane');
+  pane.innerHTML = '<div class="session-detail-empty"><span class="spinner">Loading</span></div>';
+  try {
+    const data = await api(`sessions/${id}`);
+    const allMessages = [...(data.history || []), ...(data.messages || [])];
+    const stats = data.stats || {};
+    const cost = data.cost || {};
+
+    // Build header
+    const costHtml = cost.total
+      ? `<span style="color:var(--accent);font-family:var(--mono);font-weight:700;">$${cost.total.toFixed(4)}</span>
+         <span style="color:var(--text-muted);font-size:11px;">${cost.calls || 0} calls \u00b7 ${formatCharCount(cost.input || 0)} in \u00b7 ${formatCharCount(cost.output || 0)} out</span>`
+      : '';
+    let headerHtml = `<div class="session-detail-header">
+      <span class="session-detail-id">${id}</span>
+      <div class="session-detail-stats">
+        <span>${allMessages.length} msgs</span>
+        ${stats.toolCalls ? `<span>${stats.toolCalls} tools</span>` : ''}
+        ${stats.estTokens ? `<span>~${formatCharCount(stats.estTokens)} tok</span>` : ''}
+        ${costHtml}
+      </div>
+      <div class="session-detail-actions">
+        <button class="btn sm secondary" id="trace-expand-all">Expand All</button>
+      </div>
+    </div>`;
+
+    // Build trace
+    const traceHtml = [];
+    for (const msg of allMessages) {
+      const role = msg.role || 'unknown';
+      if (typeof msg.content === 'string') {
+        traceHtml.push(renderTextBlock(role, msg.content, traceId()));
+        continue;
+      }
+      if (Array.isArray(msg.content)) {
+        for (const block of msg.content) {
+          if (block.type === 'text') {
+            traceHtml.push(renderTextBlock(role, block.text, traceId()));
+          } else if (block.type === 'tool_use') {
+            traceHtml.push(renderToolUse(block, traceId()));
+          } else if (block.type === 'tool_result') {
+            traceHtml.push(renderToolResult(block.content, traceId()));
+          } else {
+            traceHtml.push(renderTextBlock(role, JSON.stringify(block), traceId()));
+          }
+        }
+        continue;
+      }
+      // OpenAI tool_calls format
+      if (msg.tool_calls) {
+        if (msg.content) traceHtml.push(renderTextBlock('assistant', msg.content, traceId()));
+        for (const tc of msg.tool_calls) {
+          traceHtml.push(renderToolUse({
+            name: tc.function?.name || tc.name || '?',
+            input: (() => { try { return JSON.parse(tc.function?.arguments || '{}'); } catch { return {}; } })(),
+            id: tc.id,
+          }, traceId()));
+        }
+        continue;
+      }
+      // OpenAI tool result
+      if (role === 'tool') {
+        traceHtml.push(renderToolResult(msg.content, traceId()));
+        continue;
+      }
+      traceHtml.push(renderTextBlock(role, JSON.stringify(msg.content || ''), traceId()));
+    }
+
+    pane.innerHTML = headerHtml + `<div class="session-trace">${traceHtml.join('')}</div>`;
+
+    // Expand/collapse all
+    allExpanded = false;
+    const expandBtn = pane.querySelector('#trace-expand-all');
+    if (expandBtn) {
+      expandBtn.addEventListener('click', () => {
+        allExpanded = !allExpanded;
+        pane.querySelectorAll('.trace-body').forEach(b => b.classList.toggle('show', allExpanded));
+        expandBtn.textContent = allExpanded ? 'Collapse All' : 'Expand All';
+      });
+    }
+  } catch (err) {
+    pane.innerHTML = `<div class="session-detail-empty" style="color:var(--accent);">Error: ${err.message}</div>`;
+  }
+}
+
+// ═══════ CHAT VIEW ═══════
+
 let chatSessionId = null;
 let chatContexts = [];
 
 async function initChat() {
-  // Load sessions into picker
   const sessions = await api('sessions');
   const picker = $('#chat-session-picker');
   picker.innerHTML = '<option value="">Select session...</option>';
   for (const s of sessions) {
     const opt = document.createElement('option');
     opt.value = s.id;
-    opt.textContent = `${s.id} (${s.messageCount} msgs)`;
+    const costStr = s.cost?.total ? ` · $${s.cost.total.toFixed(4)}` : '';
+    opt.textContent = `${s.id} (${s.messageCount} msgs${costStr})`;
     if (s.id === chatSessionId) opt.selected = true;
     picker.appendChild(opt);
   }
+  updateChatCost();
   updateContextPills();
+}
+
+function updateChatCost() {
+  const el = $('#chat-cost');
+  if (!chatSessionId) { el.textContent = ''; return; }
+  const session = allSessions.find(s => s.id === chatSessionId);
+  if (session?.cost?.total) {
+    el.textContent = `$${session.cost.total.toFixed(4)}`;
+  } else {
+    el.textContent = '';
+  }
 }
 
 $('#chat-new').addEventListener('click', async () => {
@@ -863,23 +1671,20 @@ $('#chat-session-picker').addEventListener('change', async (e) => {
   const id = e.target.value;
   if (!id) return;
   chatSessionId = id;
-  // Load session messages
   const sessions = await api('sessions');
   const session = sessions.find(s => s.id === id);
   chatContexts = session?.contexts || [];
-  // Reload messages by loading session data
   $('#chat-messages').innerHTML = '';
-  // We need the full session messages - fetch by resuming
   try {
-    const res = await fetch(`/api/chat`, {
+    await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId: id, message: '' }),
     });
-    // This will error but it resumes the session in memory
   } catch {}
+  updateChatCost();
   updateContextPills();
-  toast(`Switched to session ${id}`);
+  toast(`Switched to ${id}`);
 });
 
 async function updateContextPills() {
@@ -890,7 +1695,7 @@ async function updateContextPills() {
   for (const name of chatContexts) {
     const pill = document.createElement('span');
     pill.className = 'pill';
-    pill.innerHTML = `${name} <span class="x">x</span>`;
+    pill.innerHTML = `${escapeHtml(name)} <span class="x">x</span>`;
     pill.querySelector('.x').addEventListener('click', async () => {
       if (!chatSessionId) return;
       await api('chat/context', { method: 'POST', body: { sessionId: chatSessionId, action: 'unload', name } });
@@ -900,7 +1705,6 @@ async function updateContextPills() {
     pills.appendChild(pill);
   }
 
-  // Add button
   const addPill = document.createElement('span');
   addPill.className = 'pill add';
   addPill.textContent = '+ context';
@@ -918,15 +1722,6 @@ async function updateContextPills() {
   pills.appendChild(addPill);
 }
 
-function renderMarkdownLite(text) {
-  return text
-    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^- (.+)/gm, '&bull; $1')
-    .replace(/\n/g, '<br>');
-}
-
 function addMessage(role, content) {
   const div = document.createElement('div');
   div.className = `msg ${role}`;
@@ -935,6 +1730,19 @@ function addMessage(role, content) {
   $('#chat-messages').scrollTop = $('#chat-messages').scrollHeight;
   return div;
 }
+
+const TOOL_ICONS = {
+  search_vault: '\u{1F50D}', read_file: '\u{1F4D6}', write_file: '\u270F\uFE0F',
+  list_files: '\u{1F4C1}', journal_append: '\u{1F4DD}', journal_read: '\u{1F4C5}',
+  find_recent_files: '\u{1F550}', list_contexts: '\u{1F4DA}', load_context: '\u{1F517}',
+  spawn_subagent: '\u{1F916}', check_email: '\u{1F4E7}', read_email: '\u{1F4E8}',
+  send_email: '\u{1F4E4}', store_credential: '\u{1F511}', get_credential: '\u{1F511}',
+  create_skill: '\u{1F4DA}', list_skills: '\u{1F4CB}', load_skill: '\u{1F4D6}',
+  delete_skill: '\u{1F5D1}', create_tool: '\u{1F527}', list_custom_tools: '\u{1F9F0}',
+  view_tool_source: '\u{1F4C4}', delete_tool: '\u{1F5D1}',
+  create_cron: '\u{23F0}', list_crons: '\u{1F4CB}', update_cron: '\u{1F504}',
+  enable_cron: '\u2705', disable_cron: '\u23F8\uFE0F', delete_cron: '\u{1F5D1}',
+};
 
 async function sendChat() {
   const input = $('#chat-input');
@@ -951,19 +1759,6 @@ async function sendChat() {
 
   let assistantDiv = addMessage('assistant', '');
   let fullText = '';
-
-  const TOOL_ICONS = {
-    search_vault: '\u{1F50D}', read_file: '\u{1F4D6}', write_file: '\u270F\uFE0F',
-    list_files: '\u{1F4C1}', journal_append: '\u{1F4DD}', journal_read: '\u{1F4C5}',
-    find_recent_files: '\u{1F550}', list_contexts: '\u{1F4DA}', load_context: '\u{1F517}',
-    spawn_subagent: '\u{1F916}', check_email: '\u{1F4E7}', read_email: '\u{1F4E8}',
-    send_email: '\u{1F4E4}', store_credential: '\u{1F511}', get_credential: '\u{1F511}',
-    create_skill: '\u{1F4DA}', list_skills: '\u{1F4CB}', load_skill: '\u{1F4D6}',
-    delete_skill: '\u{1F5D1}', create_tool: '\u{1F527}', list_custom_tools: '\u{1F9F0}',
-    view_tool_source: '\u{1F4C4}', delete_tool: '\u{1F5D1}',
-    create_cron: '\u{23F0}', list_crons: '\u{1F4CB}', update_cron: '\u{1F504}',
-    enable_cron: '\u2705', disable_cron: '\u23F8\uFE0F', delete_cron: '\u{1F5D1}',
-  };
 
   try {
     const res = await fetch('/api/chat', {
@@ -994,17 +1789,16 @@ async function sendChat() {
             const icon = TOOL_ICONS[event.name] || '\u26A1';
             const argsStr = Object.entries(event.arguments || {}).map(([k,v]) => `${k}=${typeof v === 'string' ? v.slice(0,40) : v}`).join(', ');
             const toolDiv = document.createElement('div');
-            toolDiv.className = 'tool-activity';
-            toolDiv.innerHTML = `${icon} <span class="tool-name">${event.name}</span>(${argsStr})`;
+            toolDiv.className = 'chat-tool-activity';
+            toolDiv.innerHTML = `${icon} <span class="tool-name">${escapeHtml(event.name)}</span>(${escapeHtml(argsStr)})`;
             $('#chat-messages').appendChild(toolDiv);
             $('#chat-messages').scrollTop = $('#chat-messages').scrollHeight;
           } else if (event.type === 'tool_result') {
             const preview = (event.result || '').split('\n').slice(0,2).join(' ').slice(0,120);
             const resultDiv = document.createElement('div');
-            resultDiv.className = 'tool-activity';
-            resultDiv.innerHTML = `\u2192 <span class="tool-result">${preview}</span>`;
+            resultDiv.className = 'chat-tool-activity';
+            resultDiv.innerHTML = `\u2192 <span class="tool-result">${escapeHtml(preview)}</span>`;
             $('#chat-messages').appendChild(resultDiv);
-            // Start a new assistant message div for the next text
             fullText = '';
             assistantDiv = addMessage('assistant', '');
           } else if (event.type === 'error') {
@@ -1014,7 +1808,6 @@ async function sendChat() {
         } catch {}
       }
     }
-    // Remove empty assistant div if no text was added
     if (!fullText.trim() && assistantDiv.parentNode) {
       assistantDiv.parentNode.removeChild(assistantDiv);
     }
@@ -1025,20 +1818,411 @@ async function sendChat() {
 
 $('#chat-send').addEventListener('click', sendChat);
 $('#chat-input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendChat();
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+
+// ═══════ ACTIVITY VIEW ═══════
+
+async function loadActivity() {
+  await Promise.all([loadActivityCards(), loadGatewayFeed(), loadCostPanel(), loadJournal(), loadLastTask()]);
+}
+
+async function loadActivityCards() {
+  try {
+    const data = await api('status');
+
+    // Gateway
+    if (data.gateway?.running) {
+      $('#act-gateway').textContent = 'Online';
+      $('#act-gateway').style.color = 'var(--green)';
+      const upMin = data.gateway.startedAt ? Math.floor((Date.now() - new Date(data.gateway.startedAt).getTime()) / 60000) : 0;
+      $('#act-gateway-sub').textContent = upMin > 60 ? `Up ${Math.floor(upMin/60)}h ${upMin%60}m` : `Up ${upMin}m`;
+    } else {
+      $('#act-gateway').textContent = 'Offline';
+      $('#act-gateway').style.color = 'var(--accent)';
+      $('#act-gateway-sub').textContent = '';
+    }
+
+    // Sessions
+    $('#act-sessions').textContent = data.sessions;
+
+    // Heartbeats
+    const hbCount = data.gateway?.heartbeatCount || 0;
+    $('#act-hb').textContent = hbCount;
+    const lastHb = data.gateway?.lastHeartbeat || data.heartbeat?.lastRun;
+    if (lastHb) {
+      const ago = Math.floor((Date.now() - new Date(lastHb).getTime()) / 60000);
+      $('#act-hb-sub').textContent = `Last: ${ago}m ago`;
+    }
+  } catch {}
+}
+
+async function loadGatewayFeed() {
+  try {
+    const log = await api('gateway/log');
+    const div = $('#activity-feed');
+    if (log.length === 0) {
+      div.innerHTML = '<div style="padding:12px;color:var(--text-muted);">No activity yet.</div>';
+      return;
+    }
+    div.innerHTML = log.slice().reverse().map(e => {
+      const t = new Date(e.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      return `<div class="feed-entry"><span class="feed-time">${t}</span>${escapeHtml(e.text)}</div>`;
+    }).join('');
+  } catch {}
+}
+
+async function loadCostPanel() {
+  try {
+    const costs = await api('costs');
+    const cfg = await api('config');
+    const dailyLimit = cfg.current?.budget?.dailyLimit || 2.0;
+    const warnAt = cfg.current?.budget?.warnAt || 1.5;
+
+    // Today's cost
+    const today = costs.length > 0 ? costs[0] : null;
+    const todayCost = today ? today.totalCost : 0;
+    $('#act-today-cost').textContent = `$${todayCost.toFixed(2)}`;
+    $('#act-today-calls').textContent = today ? `${today.calls} API calls` : '';
+
+    // 30-day total
+    const total30 = costs.reduce((sum, c) => sum + (c.totalCost || 0), 0);
+    const total30Calls = costs.reduce((sum, c) => sum + (c.calls || 0), 0);
+    const el30 = $('#cost-30day');
+    if (el30) el30.innerHTML = `$${total30.toFixed(2)} <span style="font-size:12px;color:var(--text-muted);font-weight:400;">${total30Calls} calls across ${costs.length} days</span>`;
+
+    // Budget bar
+    const pct = Math.min((todayCost / dailyLimit) * 100, 100);
+    let barClass = 'ok';
+    if (todayCost >= dailyLimit) barClass = 'over';
+    else if (todayCost >= warnAt) barClass = 'warn';
+    $('#budget-section').innerHTML = `
+      <div class="budget-bar-bg"><div class="budget-bar-fill ${barClass}" style="width:${pct}%"></div></div>
+      <div class="budget-label">$${todayCost.toFixed(2)} / $${dailyLimit.toFixed(2)} daily limit</div>
+    `;
+
+    // 7-day chart
+    const last7 = costs.slice(0, 7).reverse();
+    const maxSpend = Math.max(...last7.map(c => c.totalCost), 0.01);
+    const chart = $('#spend-chart');
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const todayDate = new Date().toISOString().slice(0, 10);
+    chart.innerHTML = last7.map(c => {
+      const h = Math.max((c.totalCost / maxSpend) * 60, 2);
+      const d = new Date(c.date + 'T12:00:00');
+      const label = days[d.getDay()] || c.date.slice(5);
+      const isToday = c.date === todayDate;
+      const barColor = isToday ? 'var(--accent)' : 'var(--blue)';
+      return `<div class="spend-bar-col">
+        <div style="font-size:9px;color:var(--text-muted);margin-bottom:2px;">$${c.totalCost.toFixed(2)}</div>
+        <div class="spend-bar" style="height:${h}px;background:${barColor};" title="${c.date}: $${c.totalCost.toFixed(4)} (${c.calls} calls)"></div>
+        <div class="spend-bar-label">${isToday ? 'Today' : label}</div>
+      </div>`;
+    }).join('');
+
+    // Breakdown
+    const breakdown = $('#cost-breakdown');
+    if (today?.byRole) {
+      breakdown.innerHTML = Object.entries(today.byRole).map(([role, d]) =>
+        `<div class="cost-breakdown-row">
+          <span class="cost-breakdown-role">${role}</span>
+          <span class="cost-breakdown-val">$${d.cost.toFixed(3)}</span>
+        </div>`
+      ).join('');
+    } else {
+      breakdown.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">No data today</div>';
+    }
+  } catch {}
+}
+
+async function loadJournal() {
+  try {
+    const status = await api('status');
+    $('#journal-body').textContent = status.journal || 'No journal entry for today.';
+  } catch {}
+}
+
+async function loadLastTask() {
+  try {
+    const sessions = await api('sessions');
+    const div = $('#last-task-content');
+    if (!sessions || sessions.length === 0) {
+      div.innerHTML = '<span style="color:var(--text-muted);">No sessions yet</span>';
+      return;
+    }
+    const last = sessions[0]; // Already sorted newest first
+    const type = guessSessionType(last);
+    const cost = last.cost || {};
+    const stats = last.stats || {};
+    div.innerHTML = `
+      <span class="session-item-type type-${type}" style="font-size:10px;">${type}</span>
+      <span class="last-task-id" onclick="switchView('sessions');setTimeout(()=>{activeSessionId='${last.id}';renderSessionList();loadSessionDetail('${last.id}')},100)">${last.id.slice(0, 10)}</span>
+      <span class="last-task-preview">${escapeHtml((last.lastMessage || 'No message').slice(0, 100))}</span>
+      <div class="last-task-meta">
+        <span>${timeAgo(last.updated || last.created)}</span>
+        <span>${last.messageCount || 0} msgs</span>
+        ${stats.toolCalls ? `<span>${stats.toolCalls} tools</span>` : ''}
+        ${cost.total ? `<span class="last-task-cost">$${cost.total.toFixed(4)}</span>` : ''}
+      </div>
+    `;
+  } catch {}
+}
+
+$('#journal-toggle').addEventListener('click', () => {
+  const body = $('#journal-body');
+  const arrow = $('#journal-arrow');
+  body.classList.toggle('show');
+  arrow.classList.toggle('open');
+});
+
+// ═══════ SETTINGS VIEW ═══════
+
+let currentSettingsSection = 'general';
+
+$$('.settings-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    currentSettingsSection = pill.dataset.section;
+    $$('.settings-pill').forEach(p => p.classList.toggle('active', p.dataset.section === currentSettingsSection));
+    $$('.settings-section').forEach(s => s.classList.toggle('active', s.id === `settings-${currentSettingsSection}`));
+    loadSettingsSection();
+  });
+});
+
+async function loadSettingsSection() {
+  const s = currentSettingsSection;
+  if (s === 'general') loadConfig();
+  else if (s === 'models') loadModels();
+  else if (s === 'credentials') loadCredentials();
+  else if (s === 'gateway') loadGatewaySettings();
+  else if (s === 'crons') loadCrons();
+  else if (s === 'skills') loadSkills();
+  else if (s === 'tools') loadTools();
+}
+
+// --- General Config ---
+const MODEL_ROLES = ['router', 'quick', 'default', 'deep'];
+const PROVIDERS = ['anthropic', 'ollama', 'openai', 'openrouter', 'together', 'groq', 'generic'];
+
+async function loadConfig() {
+  const data = await api('config');
+  const c = data.current;
+  $('#cfg-vault').value = c.vault || '';
+  $('#cfg-dailyNotesDir').value = c.dailyNotesDir || '';
+  $('#cfg-inboxDir').value = c.inboxDir || '';
+  $('#cfg-keepRecent').value = c.compaction?.keepRecentMessages ?? '';
+  $('#cfg-maxCompact').value = c.compaction?.maxMessagesBeforeCompact ?? '';
+  $('#cfg-dailyLimit').value = c.budget?.dailyLimit ?? '';
+  $('#cfg-warnAt').value = c.budget?.warnAt ?? '';
+}
+
+$('#config-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const body = {};
+  const vault = $('#cfg-vault').value.trim();
+  if (vault) body.vault = vault;
+  const dailyNotesDir = $('#cfg-dailyNotesDir').value.trim();
+  if (dailyNotesDir) body.dailyNotesDir = dailyNotesDir;
+  const inboxDir = $('#cfg-inboxDir').value.trim();
+  if (inboxDir) body.inboxDir = inboxDir;
+  body.compaction = {
+    keepRecentMessages: parseInt($('#cfg-keepRecent').value) || 10,
+    maxMessagesBeforeCompact: parseInt($('#cfg-maxCompact').value) || 30,
+  };
+  body.budget = {
+    dailyLimit: parseFloat($('#cfg-dailyLimit').value) || 2.0,
+    warnAt: parseFloat($('#cfg-warnAt').value) || 1.5,
+  };
+  await api('config', { method: 'POST', body });
+  toast('Config saved');
+});
+
+// --- Models ---
+async function loadModels() {
+  const data = await api('config');
+  const c = data.current;
+  const container = $('#cfg-models');
+  container.innerHTML = '';
+  for (const role of MODEL_ROLES) {
+    const m = c.models?.[role] || {};
+    const row = document.createElement('div');
+    row.className = 'form-row';
+    row.innerHTML = `
+      <label>${role}</label>
+      <select data-role="${role}" data-field="provider">
+        ${PROVIDERS.map(p => `<option value="${p}" ${m.provider === p ? 'selected' : ''}>${p}</option>`).join('')}
+      </select>
+      <input type="text" data-role="${role}" data-field="model" value="${m.model || ''}" placeholder="model name">
+    `;
+    container.appendChild(row);
+  }
+}
+
+$('#models-save').addEventListener('click', async () => {
+  const models = {};
+  for (const role of MODEL_ROLES) {
+    const provider = $(`select[data-role="${role}"][data-field="provider"]`).value;
+    const model = $(`input[data-role="${role}"][data-field="model"]`).value.trim();
+    models[role] = { provider, model };
+  }
+  await api('config', { method: 'POST', body: { models } });
+  toast('Models saved');
+});
+
+// --- Credentials ---
+async function loadCredentials() {
+  const creds = await api('creds');
+  const tbody = $('#cred-tbody');
+  tbody.innerHTML = '';
+  for (const c of creds) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-family:var(--mono);font-size:12px;">${escapeHtml(c.name)}</td>
+      <td><span class="badge ${c.configured ? 'ok' : 'no'}">${c.configured ? 'Set' : 'Not Set'}</span></td>
+      <td>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn sm secondary cred-set-btn" data-name="${c.name}">Set</button>
+          ${c.configured ? `<button class="btn sm danger cred-rm-btn" data-name="${c.name}">Remove</button>` : ''}
+        </div>
+        <div class="cred-input" id="cred-input-${c.name}">
+          <input type="password" placeholder="Enter value..." id="cred-val-${c.name}">
+          <button class="btn sm cred-save-btn" data-name="${c.name}">Save</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  $$('.cred-set-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = $(`#cred-input-${btn.dataset.name}`);
+      input.classList.toggle('show');
+      if (input.classList.contains('show')) input.querySelector('input').focus();
+    });
+  });
+
+  $$('.cred-save-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const name = btn.dataset.name;
+      const value = $(`#cred-val-${name}`).value;
+      if (!value) return;
+      await api(`creds/${name}`, { method: 'POST', body: { value } });
+      toast(`Saved: ${name}`);
+      loadCredentials();
+    });
+  });
+
+  $$('.cred-rm-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await api(`creds/${btn.dataset.name}`, { method: 'DELETE' });
+      toast(`Removed: ${btn.dataset.name}`);
+      loadCredentials();
+    });
+  });
+}
+
+// --- Gateway Settings ---
+async function loadGatewaySettings() {
+  const [gw, cfg] = await Promise.all([api('gateway'), api('config')]);
+  const gwDiv = $('#gw-status');
+
+  if (gw.running) {
+    const upSec = gw.uptime || 0;
+    const upStr = upSec > 3600 ? `${Math.floor(upSec/3600)}h ${Math.floor((upSec%3600)/60)}m` : `${Math.floor(upSec/60)}m`;
+    const cronInfo = gw.crons ? ` \u00b7 Crons: ${gw.crons.enabled}/${gw.crons.total} active` : '';
+    gwDiv.innerHTML = `
+      <span class="badge ok">Running</span> PID ${gw.pid} \u00b7 Up ${upStr}<br>
+      Heartbeat: every ${gw.heartbeat.intervalMinutes}m \u00b7 ${gw.heartbeat.count} runs${gw.heartbeat.lastRun ? ` \u00b7 last ${new Date(gw.heartbeat.lastRun).toLocaleTimeString()}` : ''}<br>
+      Telegram: ${gw.telegram ? '<span class="badge ok">Connected</span>' : '<span class="badge no">Off</span>'}${cronInfo}
+    `;
+  } else {
+    gwDiv.innerHTML = '<span class="badge no">Not Running</span> \u2014 start with <code style="background:var(--bg);padding:2px 6px;border-radius:3px;font-family:var(--mono);">claw gateway</code>';
+  }
+
+  const hb = cfg.current?.heartbeat || {};
+  $('#hb-interval').value = hb.intervalMinutes || 15;
+  const sources = hb.sources || ['inbox', 'tasks', 'github'];
+  $('#hb-src-inbox').checked = sources.includes('inbox');
+  $('#hb-src-tasks').checked = sources.includes('tasks');
+  $('#hb-src-github').checked = sources.includes('github');
+}
+
+$('#hb-save').addEventListener('click', async () => {
+  const intervalMinutes = parseInt($('#hb-interval').value) || 15;
+  const sources = [];
+  if ($('#hb-src-inbox').checked) sources.push('inbox');
+  if ($('#hb-src-tasks').checked) sources.push('tasks');
+  if ($('#hb-src-github').checked) sources.push('github');
+  await api('config', { method: 'POST', body: { heartbeat: { intervalMinutes, sources } } });
+  toast('Heartbeat settings saved');
+  loadGatewaySettings();
+});
+
+$('#hb-run').addEventListener('click', async () => {
+  const box = $('#hb-result');
+  box.textContent = 'Running heartbeat...';
+  box.classList.add('show');
+  try {
+    const result = await api('heartbeat/run', { method: 'POST' });
+    box.textContent = JSON.stringify(result, null, 2);
+  } catch (err) {
+    box.textContent = `Error: ${err.message}`;
   }
 });
 
-// --- Folder Browser ---
+// --- Crons ---
+async function loadCrons() {
+  const crons = await api('crons');
+  const div = $('#crons-list');
+  if (crons.length === 0) {
+    div.innerHTML = '<div class="settings-list-empty">No cron jobs. Raya can create them with create_cron.</div>';
+    return;
+  }
+  div.innerHTML = crons.map(c => {
+    const status = c.enabled ? '<span class="badge ok">On</span>' : '<span class="badge no">Off</span>';
+    const last = c.lastRun ? `last: ${new Date(c.lastRun).toLocaleString()}` : 'never run';
+    return `<div class="settings-list-item">
+      ${status} <strong>${escapeHtml(c.name)}</strong>
+      <span style="color:var(--text-muted);font-family:var(--mono);font-size:12px;margin-left:8px;">${escapeHtml(c.schedule)}</span><br>
+      <span style="color:var(--text-dim);font-size:12px;">${escapeHtml(c.prompt.slice(0, 100))}${c.prompt.length > 100 ? '...' : ''}</span><br>
+      <span style="color:var(--text-muted);font-size:11px;">${last} \u00b7 ${c.runCount || 0} runs \u00b7 ID: ${c.id}</span>
+    </div>`;
+  }).join('');
+}
+
+// --- Skills ---
+async function loadSkills() {
+  const skills = await api('skills');
+  const div = $('#skills-list');
+  if (skills.length === 0) {
+    div.innerHTML = '<div class="settings-list-empty">No skills yet. Raya can create them.</div>';
+    return;
+  }
+  div.innerHTML = skills.map(s =>
+    `<div class="settings-list-item"><strong>${escapeHtml(s.name)}</strong> <span style="color:var(--text-dim);">\u2014 ${escapeHtml(s.description || 'no description')}</span></div>`
+  ).join('');
+}
+
+// --- Tools ---
+async function loadTools() {
+  const tools = await api('custom-tools');
+  const div = $('#tools-list');
+  if (tools.length === 0) {
+    div.innerHTML = '<div class="settings-list-empty">No custom tools yet. Raya can create them.</div>';
+    return;
+  }
+  div.innerHTML = tools.map(t =>
+    `<div class="settings-list-item"><strong>${escapeHtml(t.name)}</strong> <span style="color:var(--text-dim);">\u2014 ${escapeHtml(t.description || '')}</span></div>`
+  ).join('');
+}
+
+// ═══════ FOLDER BROWSER ═══════
+
 let browseTarget = null;
 let browseCurrent = '';
 
 async function openBrowse(inputId, startPath) {
   browseTarget = inputId;
-  const modal = $('#browse-modal');
-  modal.classList.add('show');
+  $('#browse-modal').classList.add('show');
   await loadBrowse(startPath || $(inputId).value || '~');
 }
 
@@ -1047,13 +2231,12 @@ async function loadBrowse(path) {
   browseCurrent = data.current;
   $('#browse-path').textContent = data.current;
 
-  // Bookmarks
   const bm = $('#browse-bookmarks');
   bm.innerHTML = '';
   if (data.bookmarks) {
     for (const b of data.bookmarks) {
       const btn = document.createElement('button');
-      btn.className = 'btn small secondary';
+      btn.className = 'btn sm secondary';
       btn.textContent = b.label;
       btn.style.fontSize = '11px';
       btn.addEventListener('click', () => loadBrowse(b.path));
@@ -1061,22 +2244,19 @@ async function loadBrowse(path) {
     }
   }
 
-  // Folder list
   const list = $('#browse-list');
   list.innerHTML = '';
 
-  // Parent directory
   const parent = document.createElement('div');
   parent.className = 'folder-item parent';
   parent.innerHTML = '<span class="icon">..</span> <span>Go up</span>';
   parent.addEventListener('click', () => loadBrowse(data.parent));
   list.appendChild(parent);
 
-  // Subdirectories
   for (const entry of data.entries) {
     const item = document.createElement('div');
     item.className = 'folder-item';
-    item.innerHTML = `<span class="icon">/</span> <span>${entry.name}</span>`;
+    item.innerHTML = `<span class="icon">/</span> <span>${escapeHtml(entry.name)}</span>`;
     item.addEventListener('click', () => loadBrowse(entry.path));
     list.appendChild(item);
   }
@@ -1090,8 +2270,17 @@ $('#browse-cancel').addEventListener('click', () => $('#browse-modal').classList
 $('#browse-close').addEventListener('click', () => $('#browse-modal').classList.remove('show'));
 $('#cfg-vault-browse').addEventListener('click', () => openBrowse('#cfg-vault'));
 
-// --- Init ---
-loadDashboard();
+// ═══════ INIT ═══════
+
+updateTopBar();
+updateTicker();
+loadSessionsList();
+polls.sessions = setInterval(loadSessionsList, 10000);
+
+// Global: update topbar every 15s, ticker every 3s
+setInterval(updateTopBar, 15000);
+setInterval(updateTicker, 3000);
+
 </script>
 </body>
 </html>
