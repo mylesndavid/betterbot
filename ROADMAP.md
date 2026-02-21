@@ -17,13 +17,23 @@
 
 ## Later
 - [ ] Handheld hardware device (R1-style) — Pi Zero / ESP32 thin client
-- [ ] Hosted/managed version — sign up, connect vault, agent just works
 - [ ] Skill/tool marketplace
 - [ ] Multi-platform (Windows, Linux)
 - [ ] Mobile companion app (iOS/Android)
 
+## BetterBot Cloud
+Fully hosted platform — no install, no API keys, no terminal. Sign up, connect your vault (or use a hosted one), your agent just runs. Always-on heartbeat, web panel, Telegram/Slack, all managed.
+
+- [ ] Cloud gateway — agent runs on our infra, vault syncs via Obsidian Sync or S3
+- [ ] Onboarding wizard — name your agent, pick a personality, connect integrations
+- [ ] Web-only vault option — for people who don't use Obsidian
+- [ ] Usage-based pricing — pay per agent activity, not flat subscription
+- [ ] Team/org support — shared agents, shared tools, shared context
+- [ ] SOC 2 / data privacy — credentials never leave the user's encrypted store
+
 ## Business
 - [ ] Open-source core (AGPL or BSL)
-- [ ] Pro tier — multi-device sync, priority model routing, advanced integrations
+- [ ] Three tiers: free self-hosted, paid DMG app, BetterBot Cloud
+- [ ] Pro features — multi-device sync, priority model routing, advanced integrations
 - [ ] Hardware product with margins
 - [ ] Build in public — demos, devlogs, prototypes
