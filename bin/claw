@@ -178,11 +178,11 @@ async function main() {
     }
 
     case 'version':
-      console.log('betterclaw v0.1.0');
+      console.log('betterbot v0.1.0');
       break;
 
     default:
-      console.log(`betterclaw v0.1.0
+      console.log(`betterbot v0.1.0
 
 Usage:
   claw init                   Interactive setup wizard

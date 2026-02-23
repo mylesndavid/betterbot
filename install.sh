@@ -1,5 +1,5 @@
 #!/bin/bash
-# BetterClaw — one-click installer
+# BetterBot — one-click installer
 # Usage: curl -sL <url> | bash
 # Or: bash install.sh
 
@@ -10,7 +10,7 @@ BIN_LINK="/usr/local/bin/claw"
 
 echo ""
 echo "  ╔══════════════════════════════╗"
-echo "  ║     BetterClaw Installer     ║"
+echo "  ║     BetterBot Installer     ║"
 echo "  ╚══════════════════════════════╝"
 echo ""
 
@@ -40,7 +40,7 @@ if [ -f "./bin/claw" ]; then
   SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
   echo "✓ Installing from local directory"
 else
-  echo "⬇ Downloading BetterClaw..."
+  echo "⬇ Downloading BetterBot..."
   TMP=$(mktemp -d)
   curl -sL "https://github.com/devvcore/betterclaw/archive/refs/heads/main.tar.gz" -o "$TMP/bc.tgz"
   tar xzf "$TMP/bc.tgz" -C "$TMP"
@@ -68,7 +68,7 @@ else
 fi
 
 echo ""
-echo "✅ BetterClaw installed!"
+echo "✅ BetterBot installed!"
 echo ""
 echo "   Run:  claw init"
 echo ""

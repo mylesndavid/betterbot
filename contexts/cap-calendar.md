@@ -11,7 +11,7 @@ macOS requires explicit permission before any process can access Calendar via Ap
 
 **First-time setup — the user must do this once:**
 1. Open **System Settings > Privacy & Security > Automation**
-2. Find the process running BetterClaw (Terminal, iTerm, or the Node binary) and enable **Calendar** access
+2. Find the process running BetterBot (Terminal, iTerm, or the Node binary) and enable **Calendar** access
 3. Also check **System Settings > Privacy & Security > Calendars** — same process needs access there
 4. Test by running in Terminal: `osascript -e 'tell application "Calendar" to return name of every calendar'`
 5. If macOS shows a permission dialog, click **Allow**

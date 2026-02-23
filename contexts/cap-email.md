@@ -14,7 +14,7 @@ Gmail via IMAP/SMTP using App Passwords.
 1. Ask the user for their Gmail address
 2. Guide them to generate an App Password:
    - Go to myaccount.google.com > Security > 2-Step Verification > App Passwords
-   - Create one for "Mail" on "Other (BetterClaw)"
+   - Create one for "Mail" on "Other (BetterBot)"
    - Copy the 16-character password
 3. Store both:
    - `store_credential("google_email", "user@gmail.com")`

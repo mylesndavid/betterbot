@@ -1,5 +1,5 @@
 {
-  "name": "betterclaw",
+  "name": "betterbot",
   "version": "0.1.0",
   "description": "Context-first AI assistant framework. Obsidian-native, model-agnostic.",
   "type": "module",
