@@ -194,7 +194,7 @@ Usage:
   betterbot gateway status         Check if gateway is running
   betterbot gateway logs           Tail gateway logs
   betterbot panel [--port N]       Open control panel (default :3333)
-  betterbot chat [--new]           Interactive chat with Raya
+  betterbot chat [--new]           Interactive chat with the agent
   betterbot heartbeat              Run heartbeat check (for cron)
   betterbot model                  Show current model config
   betterbot model set <role> <p/m> Change a model (e.g. default anthropic/claude-sonnet-4-5-20250514)

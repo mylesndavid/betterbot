@@ -32,7 +32,7 @@ betterbot chat
 ```
 bin/betterbot              CLI entry point
 lib/gateway.js        Persistent service: panel + telegram + heartbeat + crons
-lib/heartbeat.js      3-tier: cheap triage -> disposable agent -> full Raya
+lib/heartbeat.js      3-tier: cheap triage -> disposable agent -> full session
 lib/session.js        Conversation sessions with tool loops and task planning
 lib/tools.js          Built-in tools (40+) + custom tool registry
 lib/agent.js          Sub-agent spawning with full tool access
