@@ -4,21 +4,29 @@ A zero-dependency AI agent framework that lives in your Obsidian vault. Name you
 
 ## What it does
 
-- **Persistent agent** — Your agent reads and writes to your Obsidian vault. The daily journal is its memory. Context files are its personality. You name it, you shape it.
+- **Persistent agent** — Your agent reads and writes to your Obsidian vault. The daily journal is its memory. Context files define its identity. You name it, you shape it — and it shapes itself.
 - **3-tier heartbeat** — Checks for new tasks every 15 minutes. Cheap triage decides what matters, a lightweight agent handles simple stuff, and the full agent escalates for complex work.
 - **Self-building tools** — The agent creates its own tools as ES module files. Need a Telegram bot? It builds it. Need calendar access? It writes the AppleScript wrapper.
+- **Outfits** — Switchable bundles of tools, contexts, and personality. The agent wears a "coding" outfit for dev work, a "research" outfit for investigation, and can create its own.
+- **Personality** — The agent has a self-editable personality file. It defines its own voice, tone, quirks, and rules — separate from the core identity you set. It evolves over time.
+- **Graph memory** — Compaction summaries feed a persistent knowledge graph. Entities, people, decisions, and relationships are extracted automatically. `recall()` searches the graph for connected knowledge across sessions.
 - **Do mode** — For big tasks ("build me an app"), the agent plans subtasks, tracks progress, and spawns sub-agents with full tool access to parallelize work.
-- **Multi-channel** — Web panel, Telegram, CLI. Notifications route to wherever you are.
+- **Multi-channel** — Web panel, Telegram, Slack, CLI. Notifications route to wherever you are.
 - **Zero dependencies** — Node.js built-ins, `fetch()`, no npm packages. Runs on a single `node` process.
 
 ## Quick start
 
 ```bash
 # Install
-curl -sL https://raw.githubusercontent.com/mylesndavid/betterbot/main/install.sh | bash
+# Option 1: curl installer
+curl -sL https://raw.githubusercontent.com/devvcore/betterclaw/main/install.sh | bash
 
-# Configure
-source ~/.zshrc && betterbot init
+# Option 2: git clone
+git clone https://github.com/devvcore/betterclaw.git ~/.betterclaw/app
+cd ~/.betterclaw/app && npm link
+
+# Configure (guided wizard — vault, provider, API key, models, capabilities)
+betterbot init
 
 # Start the gateway (panel + telegram + heartbeat + crons)
 betterbot gateway
@@ -30,46 +38,86 @@ betterbot chat
 ## Architecture
 
 ```
-bin/betterbot              CLI entry point
-lib/gateway.js        Persistent service: panel + telegram + heartbeat + crons
-lib/heartbeat.js      3-tier: cheap triage -> disposable agent -> full session
-lib/session.js        Conversation sessions with tool loops and task planning
-lib/tools.js          Built-in tools (40+) + custom tool registry
-lib/agent.js          Sub-agent spawning with full tool access
-lib/identity.js       System prompt builder (situational awareness, rules, context)
-lib/panel/            Web UI (single HTML file, Node HTTP server)
-lib/custom-tools.js   Self-building tool system (ES module JS files)
-lib/skills.js         Markdown procedural knowledge
-lib/crons.js          User-scheduled recurring tasks
-hardware/             Device design research (handheld AI companion)
+bin/betterbot           CLI entry point (init, chat, gateway, setup, doctor)
+lib/gateway.js          Persistent service: panel + telegram + heartbeat + crons
+lib/heartbeat.js        3-tier: cheap triage → disposable agent → full session
+lib/session.js          Conversation sessions with tool loops and compaction
+lib/tools.js            Built-in tools (50+) + custom tool registry
+lib/agent.js            Sub-agent spawning with full tool access
+lib/identity.js         System prompt builder (identity, personality, contexts, rules)
+lib/outfit.js           Switchable tool + context + personality bundles
+lib/personality.js      Agent-editable personality file
+lib/graph.js            Minimal pure-JS directed graph (zero deps)
+lib/graph-memory.js     Extract entities from compactions → graph, semantic recall
+lib/slack.js            Built-in Slack integration (read/send)
+lib/panel/              Web UI (single HTML file, Node HTTP server)
+lib/custom-tools.js     Self-building tool system (ES module JS files)
+lib/skills.js           Markdown procedural knowledge in vault
+lib/crons.js            User-scheduled recurring tasks
+lib/channels/           Channel adapters (CLI, Telegram, heartbeat)
+contexts/               Identity, capability docs, coding guidance
 ```
 
 ## Config
 
-All config lives in `~/.betterclaw/config.json`. Set your vault path, model provider (OpenRouter, Anthropic, OpenAI), daily budget, and heartbeat sources.
+All config lives in `~/.betterclaw/config.json`. Set your vault path, model provider (OpenRouter, Anthropic, OpenAI, Ollama, Together, Groq), daily budget, and heartbeat sources. Run `betterbot init` for guided setup.
 
 Models are configured by role:
 - **router** — cheapest, used for heartbeat triage classification
-- **quick** — fast, used for disposable agents and compaction
+- **quick** — fast, used for disposable agents, compaction, and graph extraction
 - **default** — balanced, main conversational agent
 - **deep** — most capable, used for complex reasoning and sub-agents
 
 ## Key concepts
 
-**Vault** — Your Obsidian vault. The agent reads/writes notes, journal entries, and memories here.
+**Vault** — Your Obsidian vault. The agent reads/writes notes, journal entries, and memories here. The daily journal is the primary write target.
 
-**Workspace** — Where code projects live. Use `ws://` prefix in file paths.
+**Workspace** — Where code projects live (`~/.betterclaw/workspace/`). Use `ws://` prefix in file paths to target it.
 
-**Contexts** — Markdown files that get injected into the system prompt. Auto-loaded ones define the agent's identity. Others load on demand (`load_context("coding")`).
+**Contexts** — Markdown files injected into the system prompt. Always-loaded ones (prefixed with `_`) define the agent's core identity. Others load on demand with `load_context("coding")`. Capability docs (`cap-*`) provide setup instructions.
 
-**Custom tools** — The agent builds tools as ES module files in `~/.betterclaw/custom-tools/`. They persist across sessions and auto-load on startup.
+**Outfits** — Reusable bundles of tools, contexts, and personality stored in `~/.betterclaw/outfits/`. When the agent wears an outfit, its tools are restricted to the whitelist, contexts are auto-loaded, and personality text is injected. The agent wears outfits before focused work — `coding` for dev, `research` for investigation — and can create new ones.
 
-**Skills** — Markdown docs describing multi-step procedures. The agent creates and references them for repeatable workflows.
+**Personality** — The agent's self-editable identity file at `~/.betterclaw/personality.md`. Separate from the core identity (which is fixed by the developer). The agent defines its own voice, tone, quirks, constraints, and rules here using `edit_personality()` or `add_personality_rule()`. Persists across all sessions.
+
+**Graph memory** — A persistent knowledge graph at `~/.betterclaw/graph/`. When sessions compact, a cheap LLM extracts entities, people, decisions, and relationships into graph nodes and edges. `recall()` searches the graph first, then falls back to flat memory files. Connections build up over time across sessions.
+
+**Custom tools** — The agent builds tools as ES module files in `~/.betterclaw/custom-tools/`. They persist across sessions and auto-load on startup. Each tool is validated on creation.
+
+**Skills** — Markdown docs describing multi-step procedures. The agent creates and references them for repeatable workflows. Stored in the vault.
 
 **Task plan** — In-session self-organization. The agent breaks big tasks into subtasks, tracks progress, and spawns sub-agents for parallel work.
+
+**Capabilities** — Registry of what the agent can and can't do (email, calendar, Telegram, Slack, GitHub, search, etc.). Shown in the system prompt. The agent can set up missing capabilities itself or guide you through `betterbot setup <name>`.
+
+## Built-in channels
+
+| Channel | Description | Setup |
+|---------|-------------|-------|
+| **CLI** | Interactive terminal chat | `betterbot chat` |
+| **Web Panel** | Browser UI at localhost:3333 | `betterbot gateway` or `betterbot panel` |
+| **Telegram** | Two-way messaging via bot | `betterbot setup telegram` |
+| **Slack** | Read channels, send messages | `betterbot setup slack` |
+
+## CLI commands
+
+```
+betterbot init              Guided setup wizard
+betterbot chat              Interactive CLI chat
+betterbot gateway           Start persistent service
+betterbot gateway install   Install as macOS LaunchAgent
+betterbot setup <name>      Set up a capability (telegram, email, slack, search, etc.)
+betterbot doctor            Diagnose issues (--fix to auto-repair)
+betterbot model             Show/change model config
+betterbot ctx list          List available contexts
+betterbot search <query>    Search Obsidian vault
+betterbot sessions          List saved sessions
+betterbot creds list        Show configured credentials
+betterbot version           Show version
+```
 
 ## Requirements
 
 - Node.js 20+
 - macOS (for Calendar/Reminders via AppleScript, Keychain for credentials)
-- An LLM provider API key (OpenRouter recommended)
+- An LLM provider API key (OpenRouter recommended for multi-model access)
