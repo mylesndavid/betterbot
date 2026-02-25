@@ -1307,13 +1307,65 @@
     gap: 8px;
   }
   .model-provider-select { width: 130px; flex-shrink: 0; }
-  .model-model-select { flex: 1; min-width: 0; }
-  .model-custom-row {
-    display: none;
-    margin-top: 6px;
+  .model-picker {
+    flex: 1;
+    min-width: 0;
+    position: relative;
   }
-  .model-custom-row.show { display: block; }
-  .model-custom-row input { width: 100%; }
+  .model-selected {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    cursor: pointer;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .model-selected:hover { border-color: var(--text-dim); }
+  .model-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-top: 2px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    max-height: 300px;
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+  }
+  .model-picker.open .model-dropdown { display: flex; }
+  .model-search {
+    border: none;
+    border-bottom: 1px solid var(--border);
+    padding: 8px 10px;
+    font-size: 13px;
+    background: transparent;
+    color: var(--text);
+    outline: none;
+  }
+  .model-list {
+    overflow-y: auto;
+    max-height: 260px;
+  }
+  .model-option {
+    padding: 6px 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .model-option:hover { background: var(--accent-bg); }
+  .model-option.active { background: var(--accent-bg); }
+  .model-option-name { font-size: 13px; color: var(--text); }
+  .model-option-id { font-size: 11px; color: var(--text-dim); font-family: var(--mono); }
   .model-key-input {
     display: none;
     margin-top: 6px;
@@ -3153,44 +3205,19 @@ async function loadSettingsSection() {
 const MODEL_ROLES = ['router', 'quick', 'default', 'deep'];
 const PROVIDERS = ['anthropic', 'ollama', 'openai', 'openrouter', 'together', 'groq', 'pollinations', 'generic'];
 
-const MODEL_CATALOG = {
-  anthropic: [
-    { id: 'claude-sonnet-4-5-20250514', label: 'Claude Sonnet 4.5' },
-    { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
-    { id: 'claude-opus-4-6', label: 'Claude Opus 4.6' },
-  ],
-  openai: [
-    { id: 'o3', label: 'o3' },
-    { id: 'gpt-4.1', label: 'GPT-4.1' },
-    { id: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
-    { id: 'gpt-4.1-nano', label: 'GPT-4.1 Nano' },
-  ],
-  openrouter: [
-    { id: 'google/gemini-2.5-pro-preview', label: 'Gemini 2.5 Pro' },
-    { id: 'google/gemini-3-flash-preview', label: 'Gemini 3 Flash' },
-    { id: 'google/gemini-2.0-flash-lite-001', label: 'Gemini 2.0 Flash Lite' },
-    { id: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet 4 (via OR)' },
-    { id: 'moonshotai/kimi-k2.5', label: 'Kimi K2.5' },
-  ],
-  together: [
-    { id: 'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8', label: 'Llama 4 Maverick' },
-    { id: 'deepseek-ai/DeepSeek-R1', label: 'DeepSeek R1' },
-  ],
-  groq: [
-    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B' },
-    { id: 'meta-llama/llama-4-scout-17b-16e-instruct', label: 'Llama 4 Scout' },
-  ],
-  pollinations: [
-    { id: 'openai', label: 'GPT (Free)' },
-    { id: 'openai-fast', label: 'GPT Fast (Free)' },
-    { id: 'claude-fast', label: 'Claude Fast (Free)' },
-    { id: 'mistral', label: 'Mistral (Free)' },
-    { id: 'deepseek', label: 'DeepSeek (Free)' },
-    { id: 'qwen-coder', label: 'Qwen Coder (Free)' },
-  ],
-  ollama: [],
-  generic: [],
-};
+// Model cache — fetched live from provider APIs
+const _modelCache = {};
+
+async function fetchModelsForProvider(provider) {
+  if (_modelCache[provider]) return _modelCache[provider];
+  try {
+    const models = await api(`models/${provider}`);
+    _modelCache[provider] = models;
+    return models;
+  } catch {
+    return [];
+  }
+}
 
 const PROVIDER_CRED = {
   anthropic: 'anthropic_api_key',
@@ -3239,16 +3266,6 @@ $('#config-form').addEventListener('submit', async (e) => {
 // --- Models ---
 let _modelsCreds = [];
 
-function buildModelOptions(provider, currentModel) {
-  const catalog = MODEL_CATALOG[provider] || [];
-  const inCatalog = catalog.some(m => m.id === currentModel);
-  let html = catalog.map(m =>
-    `<option value="${m.id}" ${m.id === currentModel ? 'selected' : ''}>${m.label}</option>`
-  ).join('');
-  html += `<option value="__custom__" ${(!inCatalog && currentModel) ? 'selected' : ''}>Custom...</option>`;
-  return html;
-}
-
 function getKeyBadge(provider) {
   const credKey = PROVIDER_CRED[provider];
   if (!credKey) return '<span class="badge ok" style="font-size:11px;">No key needed</span>';
@@ -3257,19 +3274,80 @@ function getKeyBadge(provider) {
   return `<button class="btn sm danger model-set-key-btn" data-cred="${credKey}" style="font-size:11px;">Set Key</button>`;
 }
 
+async function populateModelPicker(role, provider, currentModel) {
+  const picker = $(`.model-picker[data-role="${role}"]`);
+  const input = picker.querySelector('.model-search');
+  const list = picker.querySelector('.model-list');
+  const selected = picker.querySelector('.model-selected');
+
+  input.value = '';
+  list.innerHTML = '<div style="color:var(--text-dim);padding:8px;">Loading...</div>';
+
+  const models = await fetchModelsForProvider(provider);
+
+  // Set the displayed selected value
+  if (currentModel) {
+    const match = models.find(m => m.id === currentModel);
+    selected.textContent = match ? match.name : currentModel;
+    selected.dataset.modelId = currentModel;
+  } else {
+    selected.textContent = 'Select a model...';
+    selected.dataset.modelId = '';
+  }
+
+  function renderList(filter = '') {
+    const q = filter.toLowerCase();
+    const filtered = q
+      ? models.filter(m => m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q))
+      : models;
+    const show = filtered.slice(0, 50);
+    list.innerHTML = show.map(m =>
+      `<div class="model-option${m.id === selected.dataset.modelId ? ' active' : ''}" data-id="${escapeHtml(m.id)}">
+        <span class="model-option-name">${escapeHtml(m.name)}</span>
+        <span class="model-option-id">${escapeHtml(m.id)}</span>
+      </div>`
+    ).join('');
+    if (filtered.length > 50) {
+      list.innerHTML += `<div style="color:var(--text-dim);padding:6px 8px;font-size:11px;">${filtered.length - 50} more — type to filter</div>`;
+    }
+    if (!show.length) {
+      list.innerHTML = `<div style="color:var(--text-dim);padding:8px;">No matches. Use this ID directly?
+        <button class="btn sm model-use-custom" data-id="${escapeHtml(filter)}" style="margin-left:8px;">Use "${escapeHtml(filter)}"</button></div>`;
+    }
+    // Bind clicks
+    list.querySelectorAll('.model-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        selected.textContent = opt.querySelector('.model-option-name').textContent;
+        selected.dataset.modelId = opt.dataset.id;
+        picker.classList.remove('open');
+        input.value = '';
+      });
+    });
+    list.querySelectorAll('.model-use-custom').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selected.textContent = btn.dataset.id;
+        selected.dataset.modelId = btn.dataset.id;
+        picker.classList.remove('open');
+        input.value = '';
+      });
+    });
+  }
+
+  renderList();
+  input.addEventListener('input', () => renderList(input.value));
+}
+
 async function loadModels() {
   const [data, creds] = await Promise.all([api('config'), api('creds')]);
   _modelsCreds = creds;
   const c = data.current;
   const container = $('#cfg-models');
   container.innerHTML = '';
+
   for (const role of MODEL_ROLES) {
     const m = c.models?.[role] || {};
     const provider = m.provider || 'openrouter';
     const model = m.model || '';
-    const catalog = MODEL_CATALOG[provider] || [];
-    const inCatalog = catalog.some(x => x.id === model);
-    const showCustom = !inCatalog && model;
 
     const row = document.createElement('div');
     row.className = 'model-role-row';
@@ -3282,42 +3360,52 @@ async function loadModels() {
         <select data-role="${role}" data-field="provider" class="model-provider-select">
           ${PROVIDERS.map(p => `<option value="${p}" ${p === provider ? 'selected' : ''}>${p}</option>`).join('')}
         </select>
-        <select data-role="${role}" data-field="model" class="model-model-select">
-          ${buildModelOptions(provider, model)}
-        </select>
-      </div>
-      <div class="model-custom-row ${showCustom ? 'show' : ''}" data-role="${role}">
-        <input type="text" data-role="${role}" data-field="custom-model" value="${showCustom ? escapeHtml(model) : ''}" placeholder="Custom model ID">
+        <div class="model-picker" data-role="${role}">
+          <div class="model-selected" data-model-id="">Select a model...</div>
+          <div class="model-dropdown">
+            <input type="text" class="model-search" placeholder="Search models...">
+            <div class="model-list"></div>
+          </div>
+        </div>
       </div>
       <div class="model-key-input" data-role="${role}"></div>
     `;
     container.appendChild(row);
   }
 
-  // Provider change → update model select + key badge
-  $$('.model-provider-select').forEach(sel => {
-    sel.addEventListener('change', () => {
-      const role = sel.dataset.role;
-      const provider = sel.value;
-      const modelSel = $(`select[data-role="${role}"][data-field="model"]`);
-      modelSel.innerHTML = buildModelOptions(provider, '');
-      $(`.model-key-badge[data-role="${role}"]`).innerHTML = getKeyBadge(provider);
-      $(`.model-custom-row[data-role="${role}"]`).classList.remove('show');
-      bindModelKeyButtons();
+  // Open/close model pickers
+  $$('.model-selected').forEach(sel => {
+    sel.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const picker = sel.closest('.model-picker');
+      const wasOpen = picker.classList.contains('open');
+      $$('.model-picker').forEach(p => p.classList.remove('open'));
+      if (!wasOpen) {
+        picker.classList.add('open');
+        picker.querySelector('.model-search').focus();
+      }
     });
   });
 
-  // Model select change → show/hide custom input
-  $$('.model-model-select').forEach(sel => {
-    sel.addEventListener('change', () => {
+  // Close pickers on outside click
+  document.addEventListener('click', () => $$('.model-picker').forEach(p => p.classList.remove('open')));
+  $$('.model-dropdown').forEach(dd => dd.addEventListener('click', e => e.stopPropagation()));
+
+  // Load models for each role's current provider
+  for (const role of MODEL_ROLES) {
+    const m = c.models?.[role] || {};
+    await populateModelPicker(role, m.provider || 'openrouter', m.model || '');
+  }
+
+  // Provider change → refetch models + update key badge
+  $$('.model-provider-select').forEach(sel => {
+    sel.addEventListener('change', async () => {
       const role = sel.dataset.role;
-      const customRow = $(`.model-custom-row[data-role="${role}"]`);
-      if (sel.value === '__custom__') {
-        customRow.classList.add('show');
-        customRow.querySelector('input').focus();
-      } else {
-        customRow.classList.remove('show');
-      }
+      const provider = sel.value;
+      delete _modelCache[provider]; // force refetch with potentially new key
+      $(`.model-key-badge[data-role="${role}"]`).innerHTML = getKeyBadge(provider);
+      await populateModelPicker(role, provider, '');
+      bindModelKeyButtons();
     });
   });
 
@@ -3350,6 +3438,8 @@ function bindModelKeyButtons() {
         toast(`Saved: ${credName}`);
         keyDiv.classList.remove('show');
         keyDiv.innerHTML = '';
+        // Clear model cache so refetch uses new key
+        delete _modelCache[$(`select[data-role="${role}"][data-field="provider"]`).value];
         loadModels();
       });
     });
@@ -3360,13 +3450,8 @@ $('#models-save').addEventListener('click', async () => {
   const models = {};
   for (const role of MODEL_ROLES) {
     const provider = $(`select[data-role="${role}"][data-field="provider"]`).value;
-    const modelSel = $(`select[data-role="${role}"][data-field="model"]`);
-    let model;
-    if (modelSel.value === '__custom__') {
-      model = $(`input[data-role="${role}"][data-field="custom-model"]`).value.trim();
-    } else {
-      model = modelSel.value;
-    }
+    const picker = $(`.model-picker[data-role="${role}"]`);
+    const model = picker.querySelector('.model-selected').dataset.modelId || '';
     models[role] = { provider, model };
   }
   await api('config', { method: 'POST', body: { models } });
