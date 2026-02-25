@@ -1284,6 +1284,75 @@
   .cred-input { display: none; gap: 8px; align-items: center; margin-top: 8px; }
   .cred-input.show { display: flex; }
 
+  /* Model role rows */
+  .model-role-row {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .model-role-row:last-child { border-bottom: none; }
+  .model-role-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .model-role-header label {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+  .model-role-controls {
+    display: flex;
+    gap: 8px;
+  }
+  .model-provider-select { width: 130px; flex-shrink: 0; }
+  .model-model-select { flex: 1; min-width: 0; }
+  .model-custom-row {
+    display: none;
+    margin-top: 6px;
+  }
+  .model-custom-row.show { display: block; }
+  .model-custom-row input { width: 100%; }
+  .model-key-input {
+    display: none;
+    margin-top: 6px;
+  }
+  .model-key-input.show { display: block; }
+
+  /* Channel cards */
+  .channel-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .channel-card h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .channel-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .channel-row label {
+    min-width: 90px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+  .channel-status {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
   /* Settings lists (crons, skills, tools) */
   .settings-list-item {
     padding: 8px 0;
@@ -1561,6 +1630,7 @@
         <span class="settings-pill active" data-section="general">General</span>
         <span class="settings-pill" data-section="models">Models</span>
         <span class="settings-pill" data-section="credentials">Credentials</span>
+        <span class="settings-pill" data-section="channels">Channels</span>
         <span class="settings-pill" data-section="gateway">Gateway</span>
         <span class="settings-pill" data-section="crons">Crons</span>
         <span class="settings-pill" data-section="skills">Skills</span>
@@ -1608,6 +1678,19 @@
           </table>
         </div>
 
+        <!-- Channels -->
+        <div class="settings-section" id="settings-channels">
+          <div class="form-section">
+            <h3>Notification Channels</h3>
+            <div class="form-row" style="margin-bottom:16px;">
+              <label>Default Channel</label>
+              <select id="ch-default"></select>
+              <button class="btn sm" id="ch-default-save">Save</button>
+            </div>
+          </div>
+          <div id="ch-cards"></div>
+        </div>
+
         <!-- Gateway -->
         <div class="settings-section" id="settings-gateway">
           <div class="gw-status-card" id="gw-status"></div>
@@ -1630,6 +1713,12 @@
               <button class="btn secondary" id="hb-run">Run Now</button>
             </div>
             <div class="result-box" id="hb-result"></div>
+          </div>
+          <div class="form-section">
+            <h3>Doctor</h3>
+            <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">Validate custom tools, clean quarantine, check credential alignment.</p>
+            <button class="btn secondary" id="doctor-run">Run Doctor</button>
+            <div class="result-box" id="doctor-result"></div>
           </div>
         </div>
 
@@ -3053,6 +3142,7 @@ async function loadSettingsSection() {
   if (s === 'general') loadConfig();
   else if (s === 'models') loadModels();
   else if (s === 'credentials') loadCredentials();
+  else if (s === 'channels') loadChannels();
   else if (s === 'gateway') loadGatewaySettings();
   else if (s === 'crons') loadCrons();
   else if (s === 'skills') loadSkills();
@@ -3061,7 +3151,57 @@ async function loadSettingsSection() {
 
 // --- General Config ---
 const MODEL_ROLES = ['router', 'quick', 'default', 'deep'];
-const PROVIDERS = ['anthropic', 'ollama', 'openai', 'openrouter', 'together', 'groq', 'generic'];
+const PROVIDERS = ['anthropic', 'ollama', 'openai', 'openrouter', 'together', 'groq', 'pollinations', 'generic'];
+
+const MODEL_CATALOG = {
+  anthropic: [
+    { id: 'claude-sonnet-4-5-20250514', label: 'Claude Sonnet 4.5' },
+    { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
+    { id: 'claude-opus-4-6', label: 'Claude Opus 4.6' },
+  ],
+  openai: [
+    { id: 'o3', label: 'o3' },
+    { id: 'gpt-4.1', label: 'GPT-4.1' },
+    { id: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+    { id: 'gpt-4.1-nano', label: 'GPT-4.1 Nano' },
+  ],
+  openrouter: [
+    { id: 'google/gemini-2.5-pro-preview', label: 'Gemini 2.5 Pro' },
+    { id: 'google/gemini-3-flash-preview', label: 'Gemini 3 Flash' },
+    { id: 'google/gemini-2.0-flash-lite-001', label: 'Gemini 2.0 Flash Lite' },
+    { id: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet 4 (via OR)' },
+    { id: 'moonshotai/kimi-k2.5', label: 'Kimi K2.5' },
+  ],
+  together: [
+    { id: 'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8', label: 'Llama 4 Maverick' },
+    { id: 'deepseek-ai/DeepSeek-R1', label: 'DeepSeek R1' },
+  ],
+  groq: [
+    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B' },
+    { id: 'meta-llama/llama-4-scout-17b-16e-instruct', label: 'Llama 4 Scout' },
+  ],
+  pollinations: [
+    { id: 'openai', label: 'GPT (Free)' },
+    { id: 'openai-fast', label: 'GPT Fast (Free)' },
+    { id: 'claude-fast', label: 'Claude Fast (Free)' },
+    { id: 'mistral', label: 'Mistral (Free)' },
+    { id: 'deepseek', label: 'DeepSeek (Free)' },
+    { id: 'qwen-coder', label: 'Qwen Coder (Free)' },
+  ],
+  ollama: [],
+  generic: [],
+};
+
+const PROVIDER_CRED = {
+  anthropic: 'anthropic_api_key',
+  openai: 'openai_api_key',
+  openrouter: 'openrouter_api_key',
+  together: 'together_api_key',
+  groq: 'groq_api_key',
+  pollinations: null,
+  ollama: null,
+  generic: null,
+};
 
 async function loadConfig() {
   const data = await api('config');
@@ -3097,31 +3237,136 @@ $('#config-form').addEventListener('submit', async (e) => {
 });
 
 // --- Models ---
+let _modelsCreds = [];
+
+function buildModelOptions(provider, currentModel) {
+  const catalog = MODEL_CATALOG[provider] || [];
+  const inCatalog = catalog.some(m => m.id === currentModel);
+  let html = catalog.map(m =>
+    `<option value="${m.id}" ${m.id === currentModel ? 'selected' : ''}>${m.label}</option>`
+  ).join('');
+  html += `<option value="__custom__" ${(!inCatalog && currentModel) ? 'selected' : ''}>Custom...</option>`;
+  return html;
+}
+
+function getKeyBadge(provider) {
+  const credKey = PROVIDER_CRED[provider];
+  if (!credKey) return '<span class="badge ok" style="font-size:11px;">No key needed</span>';
+  const cred = _modelsCreds.find(c => c.name === credKey);
+  if (cred?.configured) return '<span class="badge ok" style="font-size:11px;">Key set</span>';
+  return `<button class="btn sm danger model-set-key-btn" data-cred="${credKey}" style="font-size:11px;">Set Key</button>`;
+}
+
 async function loadModels() {
-  const data = await api('config');
+  const [data, creds] = await Promise.all([api('config'), api('creds')]);
+  _modelsCreds = creds;
   const c = data.current;
   const container = $('#cfg-models');
   container.innerHTML = '';
   for (const role of MODEL_ROLES) {
     const m = c.models?.[role] || {};
+    const provider = m.provider || 'openrouter';
+    const model = m.model || '';
+    const catalog = MODEL_CATALOG[provider] || [];
+    const inCatalog = catalog.some(x => x.id === model);
+    const showCustom = !inCatalog && model;
+
     const row = document.createElement('div');
-    row.className = 'form-row';
+    row.className = 'model-role-row';
     row.innerHTML = `
-      <label>${role}</label>
-      <select data-role="${role}" data-field="provider">
-        ${PROVIDERS.map(p => `<option value="${p}" ${m.provider === p ? 'selected' : ''}>${p}</option>`).join('')}
-      </select>
-      <input type="text" data-role="${role}" data-field="model" value="${m.model || ''}" placeholder="model name">
+      <div class="model-role-header">
+        <label>${role}</label>
+        <span class="model-key-badge" data-role="${role}">${getKeyBadge(provider)}</span>
+      </div>
+      <div class="model-role-controls">
+        <select data-role="${role}" data-field="provider" class="model-provider-select">
+          ${PROVIDERS.map(p => `<option value="${p}" ${p === provider ? 'selected' : ''}>${p}</option>`).join('')}
+        </select>
+        <select data-role="${role}" data-field="model" class="model-model-select">
+          ${buildModelOptions(provider, model)}
+        </select>
+      </div>
+      <div class="model-custom-row ${showCustom ? 'show' : ''}" data-role="${role}">
+        <input type="text" data-role="${role}" data-field="custom-model" value="${showCustom ? escapeHtml(model) : ''}" placeholder="Custom model ID">
+      </div>
+      <div class="model-key-input" data-role="${role}"></div>
     `;
     container.appendChild(row);
   }
+
+  // Provider change → update model select + key badge
+  $$('.model-provider-select').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const role = sel.dataset.role;
+      const provider = sel.value;
+      const modelSel = $(`select[data-role="${role}"][data-field="model"]`);
+      modelSel.innerHTML = buildModelOptions(provider, '');
+      $(`.model-key-badge[data-role="${role}"]`).innerHTML = getKeyBadge(provider);
+      $(`.model-custom-row[data-role="${role}"]`).classList.remove('show');
+      bindModelKeyButtons();
+    });
+  });
+
+  // Model select change → show/hide custom input
+  $$('.model-model-select').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const role = sel.dataset.role;
+      const customRow = $(`.model-custom-row[data-role="${role}"]`);
+      if (sel.value === '__custom__') {
+        customRow.classList.add('show');
+        customRow.querySelector('input').focus();
+      } else {
+        customRow.classList.remove('show');
+      }
+    });
+  });
+
+  bindModelKeyButtons();
+}
+
+function bindModelKeyButtons() {
+  $$('.model-set-key-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const credName = btn.dataset.cred;
+      const role = btn.closest('.model-role-row').querySelector('.model-provider-select').dataset.role;
+      const keyDiv = $(`.model-key-input[data-role="${role}"]`);
+      if (keyDiv.classList.contains('show')) {
+        keyDiv.classList.remove('show');
+        keyDiv.innerHTML = '';
+        return;
+      }
+      keyDiv.innerHTML = `
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="password" placeholder="${credName}" class="model-key-val" style="flex:1;">
+          <button class="btn sm model-key-save-btn" data-cred="${credName}" data-role="${role}">Save</button>
+        </div>
+      `;
+      keyDiv.classList.add('show');
+      keyDiv.querySelector('input').focus();
+      keyDiv.querySelector('.model-key-save-btn').addEventListener('click', async () => {
+        const val = keyDiv.querySelector('.model-key-val').value;
+        if (!val) return;
+        await api(`creds/${credName}`, { method: 'POST', body: { value: val } });
+        toast(`Saved: ${credName}`);
+        keyDiv.classList.remove('show');
+        keyDiv.innerHTML = '';
+        loadModels();
+      });
+    });
+  });
 }
 
 $('#models-save').addEventListener('click', async () => {
   const models = {};
   for (const role of MODEL_ROLES) {
     const provider = $(`select[data-role="${role}"][data-field="provider"]`).value;
-    const model = $(`input[data-role="${role}"][data-field="model"]`).value.trim();
+    const modelSel = $(`select[data-role="${role}"][data-field="model"]`);
+    let model;
+    if (modelSel.value === '__custom__') {
+      model = $(`input[data-role="${role}"][data-field="custom-model"]`).value.trim();
+    } else {
+      model = modelSel.value;
+    }
     models[role] = { provider, model };
   }
   await api('config', { method: 'POST', body: { models } });
@@ -3180,6 +3425,163 @@ async function loadCredentials() {
   });
 }
 
+// --- Channels ---
+const CHANNELS = {
+  telegram: {
+    label: 'Telegram',
+    creds: [
+      { key: 'telegram_bot_token', label: 'Bot Token' },
+      { key: 'telegram_chat_id', label: 'Chat ID' },
+    ],
+  },
+  slack: {
+    label: 'Slack',
+    creds: [
+      { key: 'slack_bot_token', label: 'Bot Token' },
+    ],
+  },
+};
+
+async function loadChannels() {
+  const [creds, gw, cfg] = await Promise.all([api('creds'), api('gateway'), api('config')]);
+  const currentDefault = cfg.current?.notifyChannel || 'telegram';
+
+  // Default channel dropdown
+  const defSel = $('#ch-default');
+  defSel.innerHTML = Object.keys(CHANNELS).map(ch =>
+    `<option value="${ch}" ${ch === currentDefault ? 'selected' : ''}>${CHANNELS[ch].label}</option>`
+  ).join('');
+
+  const container = $('#ch-cards');
+  container.innerHTML = '';
+
+  for (const [chName, chInfo] of Object.entries(CHANNELS)) {
+    const card = document.createElement('div');
+    card.className = 'channel-card';
+
+    // Credential rows
+    let credRows = '';
+    for (const c of chInfo.creds) {
+      const cred = creds.find(x => x.name === c.key);
+      const isSet = cred?.configured;
+      credRows += `
+        <div class="channel-row">
+          <label>${c.label}</label>
+          <span class="badge ${isSet ? 'ok' : 'no'}">${isSet ? 'Set' : 'Not Set'}</span>
+          <button class="btn sm secondary ch-set-btn" data-cred="${c.key}" data-channel="${chName}">Set</button>
+          ${isSet ? `<button class="btn sm danger ch-rm-btn" data-cred="${c.key}" data-channel="${chName}">Remove</button>` : ''}
+        </div>
+        <div class="cred-input" id="ch-input-${c.key}">
+          <input type="password" placeholder="Enter ${c.label}..." id="ch-val-${c.key}">
+          <button class="btn sm ch-save-btn" data-cred="${c.key}">Save</button>
+        </div>
+      `;
+    }
+
+    // Slack-specific config
+    let configRows = '';
+    if (chName === 'slack') {
+      const slackChannel = cfg.current?.slack?.channel || '#notifications';
+      configRows = `
+        <div class="channel-row">
+          <label>Channel</label>
+          <input type="text" id="ch-slack-channel" value="${escapeHtml(slackChannel)}" style="width:160px;">
+          <button class="btn sm" id="ch-slack-channel-save">Save</button>
+        </div>
+      `;
+    }
+
+    // Status
+    let statusHtml = '';
+    if (chName === 'telegram') {
+      const tgConnected = gw.telegram?.connected ?? gw.telegram;
+      const botName = gw.telegram?.botName || null;
+      if (tgConnected) {
+        statusHtml = `<span class="badge ok">Connected</span> polling active${botName ? ` \u00b7 ${escapeHtml(botName)}` : ''}`;
+      } else {
+        const hasCreds = chInfo.creds.every(c => creds.find(x => x.name === c.key)?.configured);
+        statusHtml = hasCreds
+          ? '<span class="badge no">Disconnected</span> gateway not running or bot not started'
+          : '<span class="badge no">Not Configured</span> set credentials above';
+      }
+    } else if (chName === 'slack') {
+      const hasCreds = chInfo.creds.every(c => creds.find(x => x.name === c.key)?.configured);
+      statusHtml = hasCreds
+        ? '<span class="badge ok">Configured</span>'
+        : '<span class="badge no">Not Configured</span> set credentials above';
+    }
+
+    card.innerHTML = `
+      <h4>${chInfo.label}</h4>
+      ${credRows}
+      ${configRows}
+      <div class="channel-status">${statusHtml}</div>
+      <button class="btn sm secondary ch-test-btn" data-channel="${chName}" style="margin-top:10px;">Test Message</button>
+    `;
+    container.appendChild(card);
+  }
+
+  // Bind credential set/remove/save
+  $$('.ch-set-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = $(`#ch-input-${btn.dataset.cred}`);
+      input.classList.toggle('show');
+      if (input.classList.contains('show')) input.querySelector('input').focus();
+    });
+  });
+
+  $$('.ch-save-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const key = btn.dataset.cred;
+      const val = $(`#ch-val-${key}`).value;
+      if (!val) return;
+      await api(`creds/${key}`, { method: 'POST', body: { value: val } });
+      toast(`Saved: ${key}`);
+      loadChannels();
+    });
+  });
+
+  $$('.ch-rm-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await api(`creds/${btn.dataset.cred}`, { method: 'DELETE' });
+      toast(`Removed: ${btn.dataset.cred}`);
+      loadChannels();
+    });
+  });
+
+  // Slack channel save
+  const slackSaveBtn = $('#ch-slack-channel-save');
+  if (slackSaveBtn) {
+    slackSaveBtn.addEventListener('click', async () => {
+      const channel = $('#ch-slack-channel').value.trim();
+      await api('config', { method: 'POST', body: { slack: { channel } } });
+      toast('Slack channel saved');
+    });
+  }
+
+  // Test buttons
+  $$('.ch-test-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      try {
+        await api('channels/test', { method: 'POST', body: { channel: btn.dataset.channel } });
+        toast('Test message sent!');
+      } catch (err) {
+        toast(`Failed: ${err.message}`);
+      }
+      btn.disabled = false;
+      btn.textContent = 'Test Message';
+    });
+  });
+}
+
+$('#ch-default-save').addEventListener('click', async () => {
+  const channel = $('#ch-default').value;
+  await api('config', { method: 'POST', body: { notifyChannel: channel } });
+  toast('Default channel saved');
+});
+
 // --- Gateway Settings ---
 async function loadGatewaySettings() {
   const [gw, cfg] = await Promise.all([api('gateway'), api('config')]);
@@ -3192,7 +3594,7 @@ async function loadGatewaySettings() {
     gwDiv.innerHTML = `
       <span class="badge ok">Running</span> PID ${gw.pid} \u00b7 Up ${upStr}<br>
       Heartbeat: every ${gw.heartbeat.intervalMinutes}m \u00b7 ${gw.heartbeat.count} runs${gw.heartbeat.lastRun ? ` \u00b7 last ${new Date(gw.heartbeat.lastRun).toLocaleTimeString()}` : ''}<br>
-      Telegram: ${gw.telegram ? '<span class="badge ok">Connected</span>' : '<span class="badge no">Off</span>'}${cronInfo}
+      Telegram: ${gw.telegram?.connected ? '<span class="badge ok">Connected</span>' : '<span class="badge no">Off</span>'}${cronInfo}
     `;
   } else {
     gwDiv.innerHTML = '<span class="badge no">Not Running</span> \u2014 start with <code style="background:var(--bg);padding:2px 6px;border-radius:3px;font-family:var(--mono);">betterbot gateway</code>';
@@ -3224,6 +3626,22 @@ $('#hb-run').addEventListener('click', async () => {
   try {
     const result = await api('heartbeat/run', { method: 'POST' });
     box.textContent = JSON.stringify(result, null, 2);
+  } catch (err) {
+    box.textContent = `Error: ${err.message}`;
+  }
+});
+
+$('#doctor-run').addEventListener('click', async () => {
+  const box = $('#doctor-result');
+  box.textContent = 'Running doctor...';
+  box.classList.add('show');
+  try {
+    const result = await api('doctor', { method: 'POST' });
+    const lines = [];
+    for (const msg of result.fixed) lines.push(`FIXED: ${msg}`);
+    for (const msg of result.warnings) lines.push(`WARN: ${msg}`);
+    for (const msg of result.ok) lines.push(`OK: ${msg}`);
+    box.textContent = lines.length > 0 ? lines.join('\n') : 'All checks passed.';
   } catch (err) {
     box.textContent = `Error: ${err.message}`;
   }
