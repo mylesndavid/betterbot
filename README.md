@@ -11,6 +11,7 @@ A zero-dependency AI agent framework that lives in your Obsidian vault. Name you
 - **Personality** — The agent has a self-editable personality file. It defines its own voice, tone, quirks, and rules — separate from the core identity you set. It evolves over time.
 - **Graph memory** — Compaction summaries feed a persistent knowledge graph. Entities, people, decisions, and relationships are extracted automatically. `recall()` searches the graph for connected knowledge across sessions.
 - **Do mode** — For big tasks ("build me an app"), the agent plans subtasks, tracks progress, and spawns sub-agents with full tool access to parallelize work.
+- **Long tasks** — Time and cost-bounded autonomous agents for ambitious work (deep research, apartment hunting, building apps). Runs in the background, saves findings progressively to the vault, and notifies you when done.
 - **Multi-channel** — Web panel, Telegram, Slack, CLI. Notifications route to wherever you are.
 - **Zero dependencies** — Node.js built-ins, `fetch()`, no npm packages. Runs on a single `node` process.
 
@@ -43,7 +44,7 @@ lib/gateway.js          Persistent service: panel + telegram + heartbeat + crons
 lib/heartbeat.js        3-tier: cheap triage → disposable agent → full session
 lib/session.js          Conversation sessions with tool loops and compaction
 lib/tools.js            Built-in tools (50+) + custom tool registry
-lib/agent.js            Sub-agent spawning with full tool access
+lib/agent.js            Sub-agent spawning + long task runner (non-blocking)
 lib/identity.js         System prompt builder (identity, personality, contexts, rules)
 lib/outfit.js           Switchable tool + context + personality bundles
 lib/personality.js      Agent-editable personality file
@@ -87,6 +88,8 @@ Models are configured by role:
 **Skills** — Markdown docs describing multi-step procedures. The agent creates and references them for repeatable workflows. Stored in the vault.
 
 **Task plan** — In-session self-organization. The agent breaks big tasks into subtasks, tracks progress, and spawns sub-agents for parallel work.
+
+**Long tasks** — For sustained autonomous work that needs real time (research, building, analysis). The `long_task` tool spawns a dedicated agent with configurable time and cost limits. It runs in the background — saves a research log, individual findings, and a summary index to the vault — and notifies you when done. Use `check_long_task` to monitor progress mid-flight.
 
 **Capabilities** — Registry of what the agent can and can't do (email, calendar, Telegram, Slack, GitHub, search, etc.). Shown in the system prompt. The agent can set up missing capabilities itself or guide you through `betterbot setup <name>`.
 
