@@ -13,7 +13,7 @@ const defaults = {
 
   // Paths
   vault: join(home, 'Library/Mobile Documents/iCloud~md~obsidian/Documents'),
-  dataDir: join(home, '.betterclaw'),
+  dataDir: join(home, '.betterbot'),
   sessionsDir: join(home, '.betterclaw/sessions'),
   workspaceDir: join(home, '.betterclaw/workspace'),
   contextsDir: join(__dirname, 'contexts'),
@@ -96,7 +96,7 @@ function deepMerge(target, source) {
   return result;
 }
 
-export const userConfigPath = join(home, '.betterclaw', 'config.json');
+export const userConfigPath = join(home, '.betterbot', 'config.json');
 
 function loadUserConfig() {
   try {
