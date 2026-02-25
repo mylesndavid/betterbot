@@ -14,11 +14,11 @@ const defaults = {
   // Paths
   vault: join(home, 'Library/Mobile Documents/iCloud~md~obsidian/Documents'),
   dataDir: join(home, '.betterbot'),
-  sessionsDir: join(home, '.betterclaw/sessions'),
-  workspaceDir: join(home, '.betterclaw/workspace'),
+  sessionsDir: join(home, '.betterbot/sessions'),
+  workspaceDir: join(home, '.betterbot/workspace'),
   contextsDir: join(__dirname, 'contexts'),
-  outfitsDir: join(home, '.betterclaw/outfits'),
-  graphDir: join(home, '.betterclaw/graph'),
+  outfitsDir: join(home, '.betterbot/outfits'),
+  graphDir: join(home, '.betterbot/graph'),
 
   // Vault folders
   para: {
