@@ -4,17 +4,18 @@ type: capability
 ---
 # Web Browse — Setup Guide
 
-Fetch and read specific web pages, docs, articles. This is for reading SPECIFIC URLs — NOT for search (use Web Search for that).
+Browse web pages interactively using an ARIA-snapshot sub-agent.
 
 ## Setup
-No API key needed. Build a `browse_url` custom tool yourself:
-- Use `fetch(url)` to get the page
-- Strip `<script>`, `<style>` tags
-- Strip remaining HTML tags
-- Decode HTML entities
-- Cap output at 5000 chars
+No setup needed — `browse_web(url, task)` is a built-in tool.
+
+## Usage
+```
+browse_web({ url: "https://example.com", task: "Find the pricing table and extract all plan details" })
+```
 
 ## Notes
-- This works for static content, docs, articles, APIs
-- Does NOT work for JavaScript-rendered SPAs
-- Do NOT use this to scrape Google search results
+- Uses ARIA snapshots (text, not screenshots) — very cheap (~$0.01 per session)
+- Can interact with pages: click elements, fill forms, navigate
+- Works with the user's Chrome cookies when useProfile is enabled
+- For simple URL fetching (APIs, static pages), use `http_request()` instead

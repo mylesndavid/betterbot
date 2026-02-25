@@ -4,35 +4,50 @@ type: capability
 ---
 # Telegram — Setup Guide
 
-Telegram bot for receiving and sending messages.
+Telegram bot for two-way messaging with your human.
 
 ## What You Need
 - `telegram_bot_token` credential — from @BotFather
 - `telegram_chat_id` credential — the user's chat ID
-- `send_telegram_raw` custom tool — for proactive messaging
+- `telegram.allowedChatIds` in config — whitelist
 
-## Setup Steps
-1. User creates a bot via @BotFather on Telegram (/newbot command)
-2. Store the bot token: `store_credential("telegram_bot_token", "TOKEN")`
-3. To detect chat ID: ask user to send ANY message to the bot, then:
+## Setup Steps (you can do all of this)
+
+1. Ask the user to create a bot via @BotFather on Telegram (/newbot command) and give you the token
+2. Store the token:
    ```
-   fetch("https://api.telegram.org/bot{TOKEN}/getUpdates")
+   store_credential("telegram_bot_token", "TOKEN_FROM_USER")
    ```
-   The chat ID is in `result[0].message.chat.id`
-4. Store: `store_credential("telegram_chat_id", "CHAT_ID")`
-5. Add chat ID to allowlist in `~/.betterclaw/config.json`:
-   ```json
-   { "telegram": { "allowedChatIds": ["CHAT_ID"] } }
+3. Validate the token:
    ```
-6. Or tell the user to run: `betterbot setup telegram`
+   http_request({ url: "https://api.telegram.org/bot{TOKEN}/getMe" })
+   ```
+4. Ask the user to send ANY message to the bot, then detect their chat ID:
+   ```
+   http_request({ url: "https://api.telegram.org/bot{TOKEN}/getUpdates" })
+   ```
+   The chat ID is in `result[last].message.chat.id`
+5. Store the chat ID:
+   ```
+   store_credential("telegram_chat_id", "CHAT_ID")
+   ```
+6. Add to config allowlist:
+   ```
+   update_config({ key: "telegram.allowedChatIds", value: ["CHAT_ID"] })
+   ```
+7. Test by sending a message:
+   ```
+   http_request({
+     url: "https://api.telegram.org/bot{TOKEN}/sendMessage",
+     method: "POST",
+     body: '{"chat_id": "CHAT_ID", "text": "BetterBot connected!"}'
+   })
+   ```
 
 ## Sending Messages
-The `send_telegram_raw` tool fetches credentials internally — just call:
-```
-send_telegram_raw(message="Your message here")
-```
-Do NOT pass token or chat_id as parameters.
+Use `notify_user(message)` — it routes to Telegram automatically when configured as the notify channel.
 
 ## Notes
 - Gateway must be running for the bot to receive messages (`betterbot gateway`)
 - Only whitelisted chat IDs can interact with the bot
+- Set notify channel: `update_config({ key: "notifyChannel", value: "telegram" })`
