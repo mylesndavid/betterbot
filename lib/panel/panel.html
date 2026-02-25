@@ -1760,6 +1760,10 @@
                 <label style="min-width:unset;display:flex;align-items:center;gap:4px;"><input type="checkbox" id="hb-src-github" value="github"> GitHub</label>
               </div>
             </div>
+            <div class="form-row">
+              <label>Proactive</label>
+              <label style="min-width:unset;display:flex;align-items:center;gap:4px;"><input type="checkbox" id="hb-proactive"> Check in when idle</label>
+            </div>
             <div style="display:flex;gap:8px;margin-top:12px;">
               <button class="btn" id="hb-save">Save Heartbeat</button>
               <button class="btn secondary" id="hb-run">Run Now</button>
@@ -3691,6 +3695,7 @@ async function loadGatewaySettings() {
   $('#hb-src-inbox').checked = sources.includes('inbox');
   $('#hb-src-tasks').checked = sources.includes('tasks');
   $('#hb-src-github').checked = sources.includes('github');
+  $('#hb-proactive').checked = hb.proactive !== false;
 }
 
 $('#hb-save').addEventListener('click', async () => {
@@ -3699,7 +3704,8 @@ $('#hb-save').addEventListener('click', async () => {
   if ($('#hb-src-inbox').checked) sources.push('inbox');
   if ($('#hb-src-tasks').checked) sources.push('tasks');
   if ($('#hb-src-github').checked) sources.push('github');
-  await api('config', { method: 'POST', body: { heartbeat: { intervalMinutes, sources } } });
+  const proactive = $('#hb-proactive').checked;
+  await api('config', { method: 'POST', body: { heartbeat: { intervalMinutes, sources, proactive } } });
   toast('Heartbeat settings saved');
   loadGatewaySettings();
 });

@@ -59,6 +59,7 @@ const defaults = {
   heartbeat: {
     intervalMinutes: 15,
     sources: ['inbox', 'tasks', 'github'],
+    proactive: true,          // idle awareness — triage model decides whether to check in
   },
 
   // Credential names
