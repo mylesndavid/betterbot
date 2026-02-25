@@ -177,6 +177,12 @@ async function main() {
       break;
     }
 
+    case 'update': {
+      const { runUpdate } = await import('../lib/update.js');
+      await runUpdate();
+      break;
+    }
+
     case 'version':
       console.log('betterbot v0.1.0');
       break;
@@ -208,6 +214,7 @@ Usage:
   betterbot doctor                 Diagnose and report issues
   betterbot doctor --fix           Auto-fix (quarantine bad tools, etc.)
   betterbot doctor --reset         Nuclear reset (clear tools, reset config)
+  betterbot update                 Update to the latest version
   betterbot version                Show version`);
   }
 }
