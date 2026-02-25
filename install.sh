@@ -42,9 +42,9 @@ if [ -f "./bin/betterbot" ]; then
 else
   echo "⬇ Downloading BetterBot..."
   TMP=$(mktemp -d)
-  curl -sL "https://github.com/devvcore/betterclaw/archive/refs/heads/main.tar.gz" -o "$TMP/bc.tgz"
+  curl -sL "https://github.com/mylesndavid/betterbot/archive/refs/heads/main.tar.gz" -o "$TMP/bc.tgz"
   tar xzf "$TMP/bc.tgz" -C "$TMP"
-  SRC_DIR="$TMP/betterclaw-main"
+  SRC_DIR="$TMP/betterbot-main"
 fi
 
 # Install
