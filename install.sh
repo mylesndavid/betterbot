@@ -54,6 +54,12 @@ mkdir -p "$INSTALL_DIR"
 cp -R "$SRC_DIR"/* "$INSTALL_DIR"/
 chmod +x "$INSTALL_DIR/bin/betterbot"
 
+# Install dependencies
+if [ -f "$INSTALL_DIR/package.json" ]; then
+  echo "📚 Installing dependencies..."
+  (cd "$INSTALL_DIR" && npm install --production)
+fi
+
 # Remove quarantine (macOS)
 if command -v xattr &>/dev/null; then
   xattr -dr com.apple.quarantine "$INSTALL_DIR" 2>/dev/null || true
