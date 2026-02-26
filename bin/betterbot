@@ -171,6 +171,23 @@ async function main() {
       break;
     }
 
+    case 'export': {
+      const { exportState } = await import('../lib/export-import.js');
+      await exportState({
+        sessions: !args.includes('--no-sessions'),
+        output: args.includes('--output') ? args[args.indexOf('--output') + 1] : undefined,
+      });
+      break;
+    }
+
+    case 'import': {
+      const zipPath = args[0];
+      if (!zipPath) { console.error('Usage: betterbot import <file.zip>'); break; }
+      const { importState } = await import('../lib/export-import.js');
+      await importState(zipPath);
+      break;
+    }
+
     case 'doctor': {
       const { runDoctor } = await import('../lib/doctor.js');
       await runDoctor(args);
@@ -211,6 +228,9 @@ Usage:
   betterbot sessions               List saved sessions
   betterbot creds list             Show configured credentials
   betterbot creds set <key> <val>  Store a credential in Keychain
+  betterbot export [--no-sessions] [--output path.zip]
+                                   Export state to a portable zip file
+  betterbot import <file.zip>      Restore state from a backup zip
   betterbot doctor                 Diagnose and report issues
   betterbot doctor --fix           Auto-fix (quarantine bad tools, etc.)
   betterbot doctor --reset         Nuclear reset (clear tools, reset config)

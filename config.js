@@ -39,8 +39,9 @@ const defaults = {
 
   // Compaction
   compaction: {
-    keepRecentMessages: 10,
-    maxMessagesBeforeCompact: 30,
+    keepRecentMessages: 10,       // user turns (not raw messages) to keep verbatim after compaction
+    maxMessagesBeforeCompact: 30,  // user turns before triggering compaction
+    maxTokens: 100_000,           // estimated token limit — compact if messages exceed this
   },
 
   // Budget
