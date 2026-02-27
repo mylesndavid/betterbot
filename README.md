@@ -20,10 +20,10 @@ A zero-dependency AI agent framework that lives in your Obsidian vault. Name you
 ```bash
 # Install
 # Option 1: curl installer
-curl -sL https://raw.githubusercontent.com/devvcore/betterclaw/main/install.sh | bash
+curl -sL https://raw.githubusercontent.com/mylesndavid/betterbot/main/install.sh | bash
 
 # Option 2: git clone
-git clone https://github.com/devvcore/betterclaw.git ~/.betterclaw/app
+git clone https://github.com/mylesndavid/betterbot.git ~/.betterclaw/app
 cd ~/.betterclaw/app && npm link
 
 # Configure (guided wizard — vault, provider, API key, models, capabilities)

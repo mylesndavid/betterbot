@@ -67,6 +67,9 @@ fi
 
 # Symlink
 echo "🔗 Linking betterbot command..."
+if [ ! -d "/usr/local/bin" ]; then
+  sudo mkdir -p /usr/local/bin
+fi
 if [ -w "/usr/local/bin" ]; then
   ln -sf "$INSTALL_DIR/bin/betterbot" "$BIN_LINK"
 else
