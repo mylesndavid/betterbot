@@ -81,6 +81,7 @@ const defaults = {
     'perplexity_api_key',
     'notion_api_key',
     'slack_bot_token',
+    'betterfriends_token',
     'google_client_id',
     'google_client_secret',
     'google_refresh_token',
