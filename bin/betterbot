@@ -192,8 +192,24 @@ async function main() {
     }
 
     case 'import': {
-      const zipPath = args[0];
-      if (!zipPath) { console.error('Usage: betterbot import <file.zip>'); break; }
+      let zipPath = args[0];
+      if (!zipPath) {
+        const { tui } = await import('../lib/init.js');
+        const { homedir } = await import('node:os');
+        const { join } = await import('node:path');
+        const stdin = process.stdin;
+        if (stdin.setRawMode) stdin.setRawMode(true);
+        stdin.resume();
+        try {
+          zipPath = await tui.browseFile(join(homedir(), 'Downloads'));
+        } finally {
+          if (stdin.setRawMode) stdin.setRawMode(false);
+          stdin.pause();
+          stdin.unref();
+          tui.write(tui.SHOW_CURSOR);
+        }
+        if (!zipPath) break;
+      }
       const { importState } = await import('../lib/export-import.js');
       await importState(zipPath);
       break;
