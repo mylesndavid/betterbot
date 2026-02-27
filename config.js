@@ -59,7 +59,7 @@ const defaults = {
   // Heartbeat
   heartbeat: {
     intervalMinutes: 15,
-    sources: ['inbox', 'tasks', 'github'],
+    sources: ['inbox', 'tasks', 'github', 'calendar'],
     proactive: true,          // idle awareness — triage model decides whether to check in
   },
 
@@ -81,6 +81,9 @@ const defaults = {
     'perplexity_api_key',
     'notion_api_key',
     'slack_bot_token',
+    'google_client_id',
+    'google_client_secret',
+    'google_refresh_token',
   ],
 };
 

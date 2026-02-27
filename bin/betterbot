@@ -57,6 +57,17 @@ async function main() {
       break;
     }
 
+    case 'auth': {
+      const sub = args[0];
+      if (sub === 'google') {
+        const { startAuthFlow } = await import('../lib/google-auth.js');
+        await startAuthFlow();
+      } else {
+        console.log('Usage: betterbot auth google   Connect Google Calendar via OAuth2');
+      }
+      break;
+    }
+
     case 'telegram': {
       const sub = args[0];
       if (sub === 'setup') {
@@ -209,6 +220,7 @@ async function main() {
 
 Usage:
   betterbot init                   Interactive setup wizard
+  betterbot auth google             Connect Google Calendar via OAuth2
   betterbot setup                  Set up capabilities (telegram, email, search...)
   betterbot setup <name>           Set up a specific capability
   betterbot gateway                Start gateway (panel + telegram + heartbeat + crons)
